@@ -12,7 +12,7 @@
 
 <div align="center">
 
-# nonebot-plugin-picstatus
+# NoneBot-Plugin-PicStatus
 
 _✨ 运行状态图片版 for NoneBot2 ✨_
 
@@ -31,6 +31,10 @@ _✨ 运行状态图片版 for NoneBot2 ✨_
 ## 草图
 
 ![草图](./%E8%8D%89%E5%9B%BE.png)
+
+## Demo
+
+![demo](demo/demo.png)
 
 <!--
 这是一个 nonebot2 插件项目的模板库, 你可以直接使用本模板创建你的 nonebot2 插件项目的仓库

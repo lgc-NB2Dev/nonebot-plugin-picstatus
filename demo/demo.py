@@ -68,6 +68,7 @@ def main():
     cm = draw_cpu_memory_usage()
     bg.paste(cm, (50, 400), cm)
 
+    bg.save('demo.png', 'png')
     bg.show()
 
 
