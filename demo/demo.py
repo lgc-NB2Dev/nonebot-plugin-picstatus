@@ -1,4 +1,6 @@
 import asyncio
+import platform
+import time
 from datetime import datetime, timedelta
 from io import BytesIO
 
@@ -235,6 +237,21 @@ async def draw_disk_usage():
     return bg
 
 
+async def draw_footer(img: Image.Image):
+    # 系统信息
+    system = platform.platform()
+
+    font_25 = get_font(25)
+    draw = ImageDraw.Draw(img)
+    w, h = img.size
+
+    draw.text((20, h - 20), f'NoneBot 2.0.0b5 × PicStatus 0.1.0 | {system}', 'gray',
+              font_25,
+              'ls')
+    draw.text((w - 20, h - 20), time.strftime('%Y-%m-%d %H:%M:%S'), 'gray', font_25,
+              'rs')
+
+
 async def get_stat_pic(bg):
     img_w = 1300
     img_h = 50  # 这里是上边距，留给下面代码统计图片高度
@@ -250,13 +267,15 @@ async def get_stat_pic(bg):
     for p in ret:
         img_h += p.size[1] + 50
 
-    img = Image.new('RGBA', (img_w, img_h), '#ffffff00')
-
     # 拼接图片
+    img = Image.new('RGBA', (img_w, img_h), '#ffffff00')
     h_pos = 50
     for p in ret:
         img.paste(p, (50, h_pos), p)
         h_pos += p.size[1] + 50
+
+    # 写footer
+    await draw_footer(img)
 
     # 居中裁剪背景
     bg = (await async_open_img(bg)).convert("RGBA")
@@ -270,12 +289,12 @@ async def get_stat_pic(bg):
         scale = img_h / bg_h
         bg_w = int(bg_w * scale)
 
-        crop_l = (bg_w / 2) - (img_w / 2)
+        crop_l = round((bg_w / 2) - (img_w / 2))
         bg = bg.resize((bg_w, img_h)).crop((crop_l, 0, crop_l + img_w, img_h))
     else:
         bg_h = scaled_h
 
-        crop_t = (bg_h / 2) - (img_h / 2)
+        crop_t = round((bg_h / 2) - (img_h / 2))
         bg = bg.resize((img_w, bg_h)).crop((0, crop_t, img_w, crop_t + img_h))
 
     bg.paste(img, (0, 0), img)
