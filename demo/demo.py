@@ -6,7 +6,7 @@ from io import BytesIO
 
 import aiofiles
 import psutil
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from psutil._common import sdiskusage  # noqa
 
 GRAY_BG_COLOR = "#aaaaaaaa"
@@ -311,6 +311,10 @@ async def get_stat_pic(bg):
         crop_t = round((bg_h / 2) - (img_h / 2))
         bg = bg.resize((img_w, bg_h)).crop((0, crop_t, img_w, crop_t + img_h))
 
+    # 背景高斯模糊
+    bg = bg.filter(ImageFilter.GaussianBlur(radius=4))
+
+    # 将状态图贴上背景
     bg.paste(img, (0, 0), img)
 
     return bg
