@@ -20,7 +20,7 @@ jobs:
         pip install black
     - name: Run
       run: |
-        black $(git ls-files '*.py')
+        black ./
     - name: Push
       run: |
         git config --global user.email ${{ secrets.EMAIL }}
