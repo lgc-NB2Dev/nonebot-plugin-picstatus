@@ -18,6 +18,7 @@ def get_font(size: int):
 
 
 def get_usage_color(usage: float):
+    usage = round(usage)
     if usage >= 90:
         return "orangered"
     elif usage >= 70:
@@ -38,14 +39,15 @@ def format_timedelta(t: timedelta):
 
 
 async def async_open_img(fp, *args, **kwargs) -> Image.Image:
-    async with aiofiles.open(fp, 'rb') as f:
+    async with aiofiles.open(fp, "rb") as f:
         p = BytesIO(await f.read())
     return Image.open(p, *args, **kwargs)
 
 
 async def draw_header():
     booted = format_timedelta(
-        datetime.now() - datetime.fromtimestamp(psutil.boot_time()))
+        datetime.now() - datetime.fromtimestamp(psutil.boot_time())
+    )
 
     font_30 = get_font(30)
     font_80 = get_font(80)
@@ -58,8 +60,11 @@ async def draw_header():
     ImageDraw.Draw(circle_mask).ellipse((0, 0, 250, 250), fill="black")
 
     # 利用遮罩裁剪圆形图片
-    avatar = (await async_open_img("photo_2020-12-08_22-46-51.jpg")).convert(
-        "RGBA").resize((250, 250))
+    avatar = (
+        (await async_open_img("photo_2020-12-08_22-46-51.jpg"))
+        .convert("RGBA")
+        .resize((250, 250))
+    )
     bg.paste(avatar, (25, 25), circle_mask)
 
     # 标题
@@ -238,18 +243,29 @@ async def draw_disk_usage():
 
 
 async def draw_footer(img: Image.Image):
-    # 系统信息
-    system = platform.platform()
-
-    font_25 = get_font(25)
+    font_24 = get_font(24)
     draw = ImageDraw.Draw(img)
     w, h = img.size
+    padding = 15
 
-    draw.text((20, h - 20), f'NoneBot 2.0.0b5 × PicStatus 0.1.0 | {system}', 'gray',
-              font_25,
-              'ls')
-    draw.text((w - 20, h - 20), time.strftime('%Y-%m-%d %H:%M:%S'), 'gray', font_25,
-              'rs')
+    draw.text(
+        (padding, h - padding),
+        (
+            f"NoneBot 2.0.0b5 × PicStatus 0.1.0 | "
+            f"Python {platform.python_version()} | "
+            f"{platform.platform()}"
+        ),
+        "gray",
+        font_24,
+        "ls",
+    )
+    draw.text(
+        (w - padding, h - padding),
+        time.strftime("%Y-%m-%d %H:%M:%S"),
+        "gray",
+        font_24,
+        "rs",
+    )
 
 
 async def get_stat_pic(bg):
@@ -258,9 +274,7 @@ async def get_stat_pic(bg):
 
     # 获取各模块图片
     ret: list[Image.Image] = await asyncio.gather(  # noqa
-        draw_header(),
-        draw_cpu_memory_usage(),
-        draw_disk_usage()
+        draw_header(), draw_cpu_memory_usage(), draw_disk_usage()
     )
 
     # 统计图片高度
@@ -268,7 +282,7 @@ async def get_stat_pic(bg):
         img_h += p.size[1] + 50
 
     # 拼接图片
-    img = Image.new('RGBA', (img_w, img_h), '#ffffff00')
+    img = Image.new("RGBA", (img_w, img_h), "#ffffff00")
     h_pos = 50
     for p in ret:
         img.paste(p, (50, h_pos), p)
