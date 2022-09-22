@@ -1,4 +1,12 @@
 [[package]]
+name = "aiofiles"
+version = "22.1.0"
+description = "File support for asyncio."
+category = "main"
+optional = false
+python-versions = ">=3.7,<4.0"
+
+[[package]]
 name = "pillow"
 version = "9.2.0"
 description = "Python Imaging Library (Fork)"
@@ -23,10 +31,14 @@ test = ["ipaddress", "mock", "enum34", "pywin32", "wmi"]
 
 [metadata]
 lock-version = "1.1"
-python-versions = ">=3.8"
-content-hash = "0c9a23f67fe86b826f7e767e28f7de768b658edc78a81bd1e140f2c12bbbd0c3"
+python-versions = ">=3.8,<4.0"
+content-hash = "e1d64073cd5b22ec5faa1f744088cf41fed1564e354bc402fdd8097cd1936834"
 
 [metadata.files]
+aiofiles = [
+    {file = "aiofiles-22.1.0-py3-none-any.whl", hash = "sha256:1142fa8e80dbae46bb6339573ad4c8c0841358f79c6eb50a493dceca14621bad"},
+    {file = "aiofiles-22.1.0.tar.gz", hash = "sha256:9107f1ca0b2a5553987a94a3c9959fe5b491fdf731389aa5b7b1bd0733e32de6"},
+]
 pillow = [
     {file = "Pillow-9.2.0-cp310-cp310-macosx_10_10_x86_64.whl", hash = "sha256:a9c9bc489f8ab30906d7a85afac4b4944a572a7432e00698a7239f44a44e6efb"},
     {file = "Pillow-9.2.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:510cef4a3f401c246cfd8227b300828715dd055463cdca6176c2e4036df8bd4f"},

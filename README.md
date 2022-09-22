@@ -34,7 +34,9 @@ _✨ 运行状态图片版 for NoneBot2 ✨_
 
 ## Demo
 
-![demo](demo/demo.png)
+![demo](demo/demo1.png)
+
+![demo](demo/demo2.png)
 
 <!--
 这是一个 nonebot2 插件项目的模板库, 你可以直接使用本模板创建你的 nonebot2 插件项目的仓库

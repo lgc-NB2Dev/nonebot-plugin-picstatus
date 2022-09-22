@@ -1,5 +1,8 @@
+import asyncio
 from datetime import datetime, timedelta
+from io import BytesIO
 
+import aiofiles
 import psutil
 from PIL import Image, ImageDraw, ImageFont
 from psutil._common import sdiskusage  # noqa
@@ -32,7 +35,13 @@ def format_timedelta(t: timedelta):
     return s
 
 
-def draw_header():
+async def async_open_img(fp, *args, **kwargs) -> Image.Image:
+    async with aiofiles.open(fp, 'rb') as f:
+        p = BytesIO(await f.read())
+    return Image.open(p, *args, **kwargs)
+
+
+async def draw_header():
     booted = format_timedelta(
         datetime.now() - datetime.fromtimestamp(psutil.boot_time()))
 
@@ -47,8 +56,8 @@ def draw_header():
     ImageDraw.Draw(circle_mask).ellipse((0, 0, 250, 250), fill="black")
 
     # 利用遮罩裁剪圆形图片
-    avatar: Image.Image = Image.open("photo_2020-12-08_22-46-51.jpg")
-    avatar = avatar.convert("RGBA").resize((250, 250))
+    avatar = (await async_open_img("photo_2020-12-08_22-46-51.jpg")).convert(
+        "RGBA").resize((250, 250))
     bg.paste(avatar, (25, 25), circle_mask)
 
     # 标题
@@ -68,9 +77,12 @@ def draw_header():
     return bg
 
 
-def draw_cpu_memory_usage():
+async def draw_cpu_memory_usage():
     # 获取占用信息
-    cpu_percent = psutil.cpu_percent(interval=0.1)
+    psutil.cpu_percent()
+    await asyncio.sleep(0.1)
+    cpu_percent = psutil.cpu_percent()  # async wait
+
     cpu_count = psutil.cpu_count(logical=False)
     cpu_freq = psutil.cpu_freq()
     ram_stat = psutil.virtual_memory()
@@ -144,7 +156,7 @@ def draw_cpu_memory_usage():
     return bg
 
 
-def draw_disk_usage():
+async def draw_disk_usage():
     font_45 = get_font(45)
     font_40 = get_font(40)
 
@@ -223,26 +235,60 @@ def draw_disk_usage():
     return bg
 
 
-def main():
-    w = 1300
-    bg: Image.Image = Image.open("88303951_p0.png")
-    bg = bg.convert("RGBA")
+async def get_stat_pic(bg):
+    img_w = 1300
+    img_h = 50  # 这里是上边距，留给下面代码统计图片高度
+
+    # 获取各模块图片
+    ret: list[Image.Image] = await asyncio.gather(  # noqa
+        draw_header(),
+        draw_cpu_memory_usage(),
+        draw_disk_usage()
+    )
+
+    # 统计图片高度
+    for p in ret:
+        img_h += p.size[1] + 50
+
+    img = Image.new('RGBA', (img_w, img_h), '#ffffff00')
+
+    # 拼接图片
+    h_pos = 50
+    for p in ret:
+        img.paste(p, (50, h_pos), p)
+        h_pos += p.size[1] + 50
+
+    # 居中裁剪背景
+    bg = (await async_open_img(bg)).convert("RGBA")
     bg_w, bg_h = bg.size
-    scale = w / bg_w
-    bg = bg.resize((w, int(bg_h * scale)))
 
-    header = draw_header()
-    bg.paste(header, (50, 50), header)
+    scale = img_w / bg_w
+    scaled_h = int(bg_h * scale)
 
-    cm = draw_cpu_memory_usage()
-    bg.paste(cm, (50, 400), cm)
+    if scaled_h < img_h:  # 缩放后图片不够高（横屏图）
+        # 重算缩放比
+        scale = img_h / bg_h
+        bg_w = int(bg_w * scale)
 
-    disk = draw_disk_usage()
-    bg.paste(disk, (50, 1000), disk)
+        crop_l = (bg_w / 2) - (img_w / 2)
+        bg = bg.resize((bg_w, img_h)).crop((crop_l, 0, crop_l + img_w, img_h))
+    else:
+        bg_h = scaled_h
 
-    bg.save("demo.png", "png")
-    bg.show()
+        crop_t = (bg_h / 2) - (img_h / 2)
+        bg = bg.resize((img_w, bg_h)).crop((0, crop_t, img_w, crop_t + img_h))
+
+    bg.paste(img, (0, 0), img)
+
+    return bg
+
+
+async def main():
+    demo1 = await get_stat_pic("88303951_p0.png")  # 竖屏图
+    demo2 = await get_stat_pic("101372892_p0.png")  # 横屏图
+    demo1.save("demo1.png", "png")
+    demo2.save("demo2.png", "png")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
