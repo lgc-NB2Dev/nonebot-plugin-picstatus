@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 import psutil
 from PIL import Image, ImageDraw, ImageFont
 from psutil._common import sdiskusage  # noqa
@@ -19,8 +21,23 @@ def get_usage_color(usage: float):
         return "lightgreen"
 
 
+def format_timedelta(t: timedelta):
+    mm, ss = divmod(t.seconds, 60)
+    hh, mm = divmod(mm, 60)
+    s = "%d:%02d:%02d" % (hh, mm, ss)
+    if t.days:
+        s = ("%d天 " % t.days) + s
+    # if t.microseconds:
+    #     s += " %.3f 毫秒" % (t.microseconds / 1000)
+    return s
+
+
 def draw_header():
+    booted = format_timedelta(
+        datetime.now() - datetime.fromtimestamp(psutil.boot_time()))
+
     font_30 = get_font(30)
+    font_80 = get_font(80)
 
     bg = Image.new("RGBA", (1200, 300), WHITE_BG_COLOR)
     bg_draw = ImageDraw.Draw(bg)
@@ -35,12 +52,12 @@ def draw_header():
     bg.paste(avatar, (25, 25), circle_mask)
 
     # 标题
-    bg_draw.text((300, 140), "饼干又在咕咕咕", "black", get_font(80), "ld")
+    bg_draw.text((300, 140), "饼干又在咕咕咕", "black", font_80, "ld")
 
     # 详细信息
     bg_draw.multiline_text(
         (300, 160),
-        "在线 2:23:23 | 收 114 | 发 514\nNoneBot运行 2:23:23 | 系统运行 13天 14:52:00",
+        f"在线 2:23:23 | 收 114 | 发 514\nNoneBot运行 2:23:23 | 系统运行 {booted}",
         "black",
         font_30,
     )
