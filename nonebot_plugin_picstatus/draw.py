@@ -1,20 +1,43 @@
 import asyncio
 import platform
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from io import BytesIO
+from typing import Union
 
-import aiofiles
+import nonebot
 import psutil
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from nonebot import logger
+from nonebot.adapters.onebot.v11 import Bot
 from psutil._common import sdiskusage  # noqa
 
+from .config import config
+from .const import DEFAULT_AVATAR_PATH, DEFAULT_BG_PATH, DEFAULT_FONT_PATH
+from .statistics import (
+    get_bot_connect_time,
+    get_nonebot_run_time,
+)
+from .util import (
+    async_open_img,
+    async_request,
+    format_timedelta,
+    get_anime_pic,
+    get_qq_avatar,
+)
+from .version import __version__
+
 GRAY_BG_COLOR = "#aaaaaaaa"
-WHITE_BG_COLOR = "#ffffff66"
+WHITE_BG_COLOR = "#ffffff99"
 
 
 def get_font(size: int):
-    return ImageFont.truetype("SourceHanSansSC-Bold-2.otf", size=size)
+    default = str(DEFAULT_FONT_PATH)
+    try:
+        return ImageFont.truetype(config.ps_font or default, size=size)
+    except:
+        logger.exception("加载自定义字体失败，使用默认字体")
+        return ImageFont.truetype(default, size)
 
 
 def get_usage_color(usage: float):
@@ -27,24 +50,28 @@ def get_usage_color(usage: float):
         return "lightgreen"
 
 
-def format_timedelta(t: timedelta):
-    mm, ss = divmod(t.seconds, 60)
-    hh, mm = divmod(mm, 60)
-    s = "%d:%02d:%02d" % (hh, mm, ss)
-    if t.days:
-        s = ("%d天 " % t.days) + s
-    # if t.microseconds:
-    #     s += " %.3f 毫秒" % (t.microseconds / 1000)
-    return s
+async def draw_header(bot: Bot):
+    # 获取Bot头像
+    try:
+        avatar = await get_qq_avatar(bot.self_id)
+        avatar = Image.open(BytesIO(avatar))
+    except:
+        logger.exception("获取Bot头像失败，使用默认头像替代")
+        avatar = await async_open_img(DEFAULT_AVATAR_PATH)
 
+    # bot状态信息
+    bot_stat = (await bot.get_status())["stat"]
+    msg_rec = bot_stat["message_received"]
+    msg_sent = bot_stat["message_sent"]
+    nick = (await bot.get_login_info())["nickname"]
+    bot_connected = (
+        format_timedelta(datetime.now() - t) if (t := get_bot_connect_time()) else "未知"
+    )
+    nb_run = (
+        format_timedelta(datetime.now() - t) if (t := get_nonebot_run_time()) else "未知"
+    )
 
-async def async_open_img(fp, *args, **kwargs) -> Image.Image:
-    async with aiofiles.open(fp, "rb") as f:
-        p = BytesIO(await f.read())
-    return Image.open(p, *args, **kwargs)
-
-
-async def draw_header():
+    # 系统启动时间
     booted = format_timedelta(
         datetime.now() - datetime.fromtimestamp(psutil.boot_time())
     )
@@ -60,20 +87,16 @@ async def draw_header():
     ImageDraw.Draw(circle_mask).ellipse((0, 0, 250, 250), fill="black")
 
     # 利用遮罩裁剪圆形图片
-    avatar = (
-        (await async_open_img("photo_2020-12-08_22-46-51.jpg"))
-        .convert("RGBA")
-        .resize((250, 250))
-    )
+    avatar = avatar.convert("RGBA").resize((250, 250))
     bg.paste(avatar, (25, 25), circle_mask)
 
     # 标题
-    bg_draw.text((300, 140), "饼干又在咕咕咕", "black", font_80, "ld")
+    bg_draw.text((300, 140), nick, "black", font_80, "ld")
 
     # 详细信息
     bg_draw.multiline_text(
         (300, 160),
-        f"在线 2:23:23 | 收 114 | 发 514\nNoneBot运行 2:23:23 | 系统运行 {booted}",
+        f"Bot已连接 {bot_connected} | 收 {msg_rec} | 发 {msg_sent}\nNoneBot运行 {nb_run} | 系统运行 {booted}",
         "black",
         font_30,
     )
@@ -143,19 +166,20 @@ async def draw_cpu_memory_usage():
 
     # 写详细信息
     bg_draw.text(
-        (200, 500), f"{cpu_count}核 {cpu_freq.max:.0f}MHz", "gray", font_45, "ms"
+        (200, 500), f"{cpu_count}核 {cpu_freq.max:.0f}MHz", "darkslategray", font_45,
+        "ms"
     )
     bg_draw.text(
         (600, 500),
         f"{ram_stat.used / 1024 / 1024:.0f}M / {ram_stat.total / 1024 / 1024:.0f}M",
-        "gray",
+        "darkslategray",
         font_45,
         "ms",
     )
     bg_draw.text(
         (1000, 500),
         f"{swap_stat.used / 1024 / 1024:.0f}M / {swap_stat.total / 1024 / 1024:.0f}M",
-        "gray",
+        "darkslategray",
         font_45,
         "ms",
     )
@@ -179,7 +203,7 @@ async def draw_disk_usage():
         try:
             disks[d.mountpoint] = psutil.disk_usage(d.mountpoint)
         except Exception as e:
-            # logger.exception(f'读取 {d.mountpoint} 占用失败')
+            logger.exception(f"读取 {d.mountpoint} 占用失败")
             disks[d.mountpoint] = e
 
     # 计算图片高度，创建背景图
@@ -251,31 +275,52 @@ async def draw_footer(img: Image.Image):
     draw.text(
         (padding, h - padding),
         (
-            f"NoneBot 2.0.0b5 × PicStatus 0.1.0 | "
+            f"NoneBot {nonebot.__version__} × PicStatus {__version__} | "
             f"Python {platform.python_version()} | "
             f"{platform.platform()}"
         ),
-        "gray",
+        "darkslategray",
         font_24,
         "ls",
     )
     draw.text(
         (w - padding, h - padding),
         time.strftime("%Y-%m-%d %H:%M:%S"),
-        "gray",
+        "darkslategray",
         font_24,
         "rs",
     )
 
 
-async def get_stat_pic(bg):
+async def get_bg(pic: Union[str, bytes, BytesIO] = None) -> Image.Image:
+    if pic:
+        try:
+            if isinstance(pic, str):
+                pic = await async_request(pic)
+            if isinstance(pic, bytes):
+                pic = BytesIO(pic)
+            return Image.open(pic)
+        except:
+            logger.exception("下载/打开自定义背景图失败，使用随机背景图")
+
+    try:
+        return Image.open(BytesIO(await get_anime_pic()))
+    except:
+        logger.exception("下载/打开随机背景图失败，使用默认背景图")
+
+    return await async_open_img(DEFAULT_BG_PATH)
+
+
+async def get_stat_pic(bot: Bot, bg=None):
     img_w = 1300
     img_h = 50  # 这里是上边距，留给下面代码统计图片高度
 
-    # 获取各模块图片
+    # 获取背景及各模块图片
     ret: list[Image.Image] = await asyncio.gather(  # noqa
-        draw_header(), draw_cpu_memory_usage(), draw_disk_usage()
+        get_bg(bg), draw_header(bot), draw_cpu_memory_usage(), draw_disk_usage()
     )
+    bg = ret[0]
+    ret = ret[1:]
 
     # 统计图片高度
     for p in ret:
@@ -292,7 +337,7 @@ async def get_stat_pic(bg):
     await draw_footer(img)
 
     # 居中裁剪背景
-    bg = (await async_open_img(bg)).convert("RGBA")
+    bg = bg.convert("RGBA")
     bg_w, bg_h = bg.size
 
     scale = img_w / bg_w
@@ -312,20 +357,14 @@ async def get_stat_pic(bg):
         bg = bg.resize((img_w, bg_h)).crop((0, crop_t, img_w, crop_t + img_h))
 
     # 背景高斯模糊
-    bg = bg.filter(ImageFilter.GaussianBlur(radius=4))
+    bg = bg.filter(ImageFilter.GaussianBlur(radius=config.ps_blur_radius))
 
     # 将状态图贴上背景
     bg.paste(img, (0, 0), img)
 
-    return bg
+    # 尝试解决黑底白底颜色不同问题
+    bg = bg.convert('RGB')
 
-
-async def main():
-    demo1 = await get_stat_pic("88303951_p0.png")  # 竖屏图
-    demo2 = await get_stat_pic("101372892_p0.png")  # 横屏图
-    demo1.save("demo1.png", "png")
-    demo2.save("demo2.png", "png")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    bio = BytesIO()
+    bg.save(bio, "png")
+    return bio
