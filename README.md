@@ -17,40 +17,28 @@
 _✨ 运行状态图片版 for NoneBot2 ✨_
 
 <a href="./LICENSE">
-    <img src="https://img.shields.io/github/license/lgc2333/nonebot-plugin-picstatus.svg" alt="license">
+  <img src="https://img.shields.io/github/license/lgc2333/nonebot-plugin-picstatus.svg" alt="license">
 </a>
 <a href="https://pypi.python.org/pypi/nonebot-plugin-picstatus">
-    <img src="https://img.shields.io/pypi/v/nonebot-plugin-picstatus.svg" alt="pypi">
+  <img src="https://img.shields.io/pypi/v/nonebot-plugin-picstatus.svg" alt="pypi">
 </a>
 <img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="python">
+<a href="https://pypi.python.org/pypi/nonebot-plugin-picstatus">
+  <img src="https://img.shields.io/pypi/dm/nonebot-plugin-picstatus" alt="pypi download">
+</a>
+<a href="https://wakatime.com/badge/user/b61b0f9a-f40b-4c82-bc51-0a75c67bfccf/project/bfec6993-aa9e-42fb-9f3e-53a5d4739373">
+  <img src="https://wakatime.com/badge/user/b61b0f9a-f40b-4c82-bc51-0a75c67bfccf/project/bfec6993-aa9e-42fb-9f3e-53a5d4739373.svg" alt="wakatime">
+</a>
 
 </div>
 
-## 筹划开发中，敬请期待
-
-## 草图
-
-![草图](./%E8%8D%89%E5%9B%BE.png)
-
-## Demo
-
-![demo](demo/demo1.png)
-
-![demo](demo/demo2.png)
-
-<!--
-这是一个 nonebot2 插件项目的模板库, 你可以直接使用本模板创建你的 nonebot2 插件项目的仓库
-
-模板库使用方法:
-
-1. 点击仓库中的 "Use this template" 按钮, 输入仓库名与描述, 点击 " Create repository from template" 创建仓库
-2. 在创建好的新仓库中, 在 "Add file" 菜单中选择 "Create new file", 在新文件名处输入`LICENSE`, 此时在右侧会出现一个 "Choose a license template" 按钮, 点击此按钮选择开源协议模板, 然后在最下方提交新文件到主分支
-3. 全局替换`lgc2333`为仓库所有者 ID; 全局替换`nonebot-plugin-picstatus`为插件名; 全局替换`nonebot_plugin_picstatus`为包名; 修改 python 徽标中的版本为你插件的运行所需版本
-4. 修改 README 中的插件名和插件描述, 并在下方填充相应的内容
-
 ## 📖 介绍
 
-这里是插件的详细介绍部分
+不多说，直接看图！
+
+### 效果图
+
+![example](readme/example.png)
 
 ## 💿 安装
 
@@ -113,21 +101,41 @@ _✨ 运行状态图片版 for NoneBot2 ✨_
 
 在 nonebot2 项目的`.env`文件中添加下表中的必填配置
 
-|  配置项  | 必填 | 默认值 |   说明   |
-| :------: | :--: | :----: | :------: |
-| 配置项 1 |  是  |   无   | 配置说明 |
-| 配置项 2 |  否  |   无   | 配置说明 |
+|      配置项      |       类型       | 必填 | 默认值  |              说明              |
+| :--------------: | :--------------: | :--: | :-----: | :----------------------------: |
+|   `PS_ONLY_SU`   | 布尔值（`bool`） |  否  | `False` | 是否只能由`SuperUsers`触发指令 |
+| `PS_BLUR_RADIUS` |  整数（`int`）   |  否  |   `4`   |        背景高斯模糊半径        |
+|    `PS_FONT`     |  文本（`str`）   |  否  |   无    |         自定义字体路径         |
 
 ## 🎉 使用
 
-### 指令表
+使用指令`运行状态`（或者`状态`）来触发插件功能  
+可以在消息后面跟一张图片或者回复一张图片来自定义背景图，默认为随机背景图  
+可以配置`PS_ONLY_SU`配置项来仅允许超级用户（`SuperUsers`）触发插件功能（见[配置](#️-配置)）
 
-|  指令  | 权限 | 需要@ | 范围 |   说明   |
-| :----: | :--: | :---: | :--: | :------: |
-| 指令 1 | 主人 |  否   | 私聊 | 配置说明 |
-| 指令 2 | 群员 |  是   | 群聊 | 配置说明 |
+## 📞 联系
 
-### 效果图
+QQ：3076823485  
+Telegram：[@lgc2333](https://t.me/lgc2333)  
+吹水群：[1105946125](https://jq.qq.com/?_wv=1027&k=Z3n1MpEp)  
+邮箱：<lgc2333@126.com>
 
-如果有效果图的话
+<!--
+## 💡 鸣谢
 -->
+
+## 💰 赞助
+
+感谢大家的赞助！你们的赞助将是我继续创作的动力！
+
+- [爱发电](https://afdian.net/@lgc2333)
+- <details>
+    <summary>赞助二维码（点击展开）</summary>
+
+  ![讨饭](https://raw.githubusercontent.com/lgc2333/ShigureBotMenu/master/src/imgs/sponsor.png)
+
+  </details>
+
+## 📝 更新日志
+
+### 暂无
