@@ -2,11 +2,11 @@
 
 <div align="center">
   <a href="https://v2.nonebot.dev/store">
-    <img src="https://github.com/A-kirami/nonebot-plugin-template/blob/resources/nbp_logo.png" width="180" height="180" alt="logo">
+    <img src="https://raw.githubusercontent.com/A-kirami/nonebot-plugin-template/resources/nbp_logo.png" width="180" height="180" alt="logo">
   </a>
   <br>
   <p>
-    <img src="https://github.com/A-kirami/nonebot-plugin-template/blob/resources/NoneBotPlugin.svg" width="240" alt="logo">
+    <img src="https://raw.githubusercontent.com/A-kirami/nonebot-plugin-template/resources/NoneBotPlugin.svg" width="240" alt="logo">
   </p>
 </div>
 
@@ -38,7 +38,7 @@ _✨ 运行状态图片版 for NoneBot2 ✨_
 
 ### 效果图
 
-![example](readme/example.png)
+![example](https://raw.githubusercontent.com/lgc2333/nonebot-plugin-picstatus/master/readme/example.png)
 
 ## 💿 安装
 
