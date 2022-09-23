@@ -3,7 +3,7 @@ import platform
 import time
 from datetime import datetime
 from io import BytesIO
-from typing import Optional, Union
+from typing import Dict, Optional, Union,List,Tuple
 
 import nonebot
 import psutil
@@ -279,9 +279,9 @@ async def draw_disk_usage():
         return
 
         # IO
-    io1: dict[str, sdiskio] = psutil.disk_io_counters(True)
+    io1: Dict[str, sdiskio] = psutil.disk_io_counters(True)
     await asyncio.sleep(1)
-    io2: dict[str, sdiskio] = psutil.disk_io_counters(True)
+    io2: Dict[str, sdiskio] = psutil.disk_io_counters(True)
     io_rw = {}
     for k, v in io1.items():
         # 忽略分区
@@ -310,7 +310,7 @@ async def draw_disk_usage():
 
     max_len = 990 - (50 + left_padding)  # 进度条长度
 
-    its: list[tuple[str, sdiskusage | Exception]] = disks.items()  # noqa
+    its: List[Tuple[str, sdiskusage | Exception]] = disks.items()  # noqa
     top = 50
     for i, (name, usage) in enumerate(its):
         fail = isinstance(usage, Exception)
@@ -373,9 +373,9 @@ async def draw_disk_usage():
 
 async def draw_net_io():
     # 获取IO
-    io1: dict[str, snetio] = psutil.net_io_counters(True)
+    io1: Dict[str, snetio] = psutil.net_io_counters(True)
     await asyncio.sleep(1)
-    io2: dict[str, snetio] = psutil.net_io_counters(True)
+    io2: Dict[str, snetio] = psutil.net_io_counters(True)
 
     ios = {}
     for k, v in io1.items():
@@ -455,7 +455,7 @@ async def get_stat_pic(bot: Bot, bg=None):
     img_h = 50  # 这里是上边距，留给下面代码统计图片高度
 
     # 获取背景及各模块图片
-    ret: list[Optional[Image.Image]] = await asyncio.gather(  # noqa
+    ret: List[Optional[Image.Image]] = await asyncio.gather(  # noqa
         get_bg(bg),
         draw_header(bot),
         draw_cpu_memory_usage(),

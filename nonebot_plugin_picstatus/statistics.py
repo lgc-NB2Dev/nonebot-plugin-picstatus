@@ -1,10 +1,10 @@
 from datetime import datetime
-from typing import Optional
+from typing import Dict, Optional
 
 from nonebot import get_driver
 from nonebot.adapters.onebot.v11 import Bot
 
-bot_connect_time: dict[str, datetime] = {}
+bot_connect_time: Dict[str, datetime] = {}
 nonebot_run_time: Optional[datetime]
 
 driver = get_driver()
