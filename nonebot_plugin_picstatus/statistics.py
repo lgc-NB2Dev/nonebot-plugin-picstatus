@@ -2,8 +2,9 @@ from datetime import datetime
 from typing import Optional
 
 from nonebot import get_driver
+from nonebot.adapters.onebot.v11 import Bot
 
-bot_connect_time: Optional[datetime]
+bot_connect_time: dict[str, datetime] = {}
 nonebot_run_time: Optional[datetime]
 
 driver = get_driver()
@@ -16,9 +17,9 @@ def _():
 
 
 @driver.on_bot_connect
-def _():
+def _(bot: Bot):
     global bot_connect_time
-    bot_connect_time = datetime.now()
+    bot_connect_time[bot.self_id] = datetime.now()
 
 
 def get_nonebot_run_time():
@@ -28,8 +29,5 @@ def get_nonebot_run_time():
         return None
 
 
-def get_bot_connect_time():
-    try:
-        return bot_connect_time
-    except:
-        return None
+def get_bot_connect_time(bot_id):
+    return bot_connect_time.get(bot_id)

@@ -1,19 +1,28 @@
 from nonebot import logger, on_command
 from nonebot.adapters.onebot.v11 import Bot, Message, MessageEvent, MessageSegment
 from nonebot.internal.matcher import Matcher
+from nonebot.internal.rule import Rule
 from nonebot.params import CommandArg
+from nonebot.rule import to_me
 
 from .config import config
 from .draw import get_stat_pic
 
 
-def is_only_su_rule(event: MessageEvent):
-    if config.ps_only_su:
-        return event.get_user_id() in config.superusers
-    return True
+def trigger_rule():
+    def check_su(event: MessageEvent):
+        if config.ps_only_su:
+            return event.get_user_id() in config.superusers
+        return True
+
+    checkers = [check_su]
+    if config.ps_need_at:
+        checkers.append(to_me)
+
+    return Rule(*checkers)
 
 
-stat_matcher = on_command("运行状态", aliases={"状态"}, rule=is_only_su_rule)
+stat_matcher = on_command("运行状态", aliases={"状态"}, rule=trigger_rule())
 
 
 @stat_matcher.handle()
