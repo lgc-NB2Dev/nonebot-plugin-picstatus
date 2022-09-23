@@ -3,7 +3,7 @@ import platform
 import time
 from datetime import datetime
 from io import BytesIO
-from typing import Dict, Optional, Union,List,Tuple
+from typing import Dict, Optional, Union, List, Tuple
 
 import nonebot
 import psutil
