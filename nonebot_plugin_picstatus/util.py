@@ -1,5 +1,6 @@
 import json
 import platform
+import re
 from datetime import timedelta
 from io import BytesIO
 
@@ -76,3 +77,9 @@ def format_byte_count(b: int):
     if (g := m / 1024) < 1:
         return f"{m:.2f}M"
     return f"{g:.2f}G"
+
+
+def match_list_regexp(reg_list, txt):
+    for r in reg_list:
+        if m := re.search(r, txt):
+            return m

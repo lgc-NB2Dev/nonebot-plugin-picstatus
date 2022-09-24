@@ -1,6 +1,5 @@
 import asyncio
 import platform
-import re
 import time
 from datetime import datetime
 from io import BytesIO
@@ -26,7 +25,7 @@ from .util import (
     format_timedelta,
     get_anime_pic,
     get_qq_avatar,
-    get_system_name,
+    get_system_name, match_list_regexp,
 )
 from .version import __version__
 
@@ -69,7 +68,8 @@ async def draw_header(bot: Bot):
     bot_stat = (await bot.get_status()).get("stat")
     if bot_stat:
         msg_rec = (
-            bot_stat.get("message_received") or bot_stat.get("MessageReceived") or "未知"
+                bot_stat.get("message_received") or bot_stat.get(
+            "MessageReceived") or "未知"
         )
         msg_sent = bot_stat.get("message_sent") or bot_stat.get("MessageSent") or "未知"
     else:
@@ -272,10 +272,9 @@ async def draw_disk_usage():
         # 获取磁盘状态
         for _d in psutil.disk_partitions():
             # 忽略分区
-            for _r in config.ps_ignore_parts:
-                if re.search(_r, _d.mountpoint):
-                    logger.info(f"空间读取 分区 {_d.mountpoint} 匹配 {_r}，忽略")
-                    continue
+            if _r := match_list_regexp(config.ps_ignore_parts, _d.mountpoint):
+                logger.info(f"空间读取 分区 {_d.mountpoint} 匹配 {_r.re.pattern}，忽略")
+                continue
 
             # 根据盘符长度计算左侧留空长度用于写字
             s = font_45.getlength(_d.mountpoint) + 25
@@ -299,10 +298,9 @@ async def draw_disk_usage():
 
         for _k, _v in io1.items():
             # 忽略分区
-            for _r in config.ps_ignore_disk_ios:
-                if re.search(_r, _k):
-                    logger.info(f"IO统计 磁盘 {_k} 匹配 {_r}，忽略")
-                    continue
+            if _r := match_list_regexp(config.ps_ignore_disk_ios, _k):
+                logger.info(f"IO统计 磁盘 {_k} 匹配 {_r.re.pattern}，忽略")
+                continue
 
             _r = io2[_k].read_bytes - _v.read_bytes
             _w = io2[_k].write_bytes - _v.write_bytes
@@ -391,7 +389,8 @@ async def draw_disk_usage():
 
         for k, (r, w) in io_rw.items():
             bg_draw.text((50, top + 25), k, "black", font_45, "lm")
-            bg_draw.text((1150, top + 25), f"读 {r}/s | 写 {w}/s", "black", font_45, "rm")
+            bg_draw.text((1150, top + 25), f"读 {r}/s | 写 {w}/s", "black", font_45,
+                         "rm")
             top += 75
 
     return bg
@@ -405,10 +404,9 @@ async def draw_net_io():
 
     ios = {}
     for k, v in io1.items():
-        for r in config.ps_ignore_nets:
-            if re.search(r, k):
-                logger.info(f"网卡 {k} 匹配 {k}，忽略")
-                continue
+        if r := match_list_regexp(config.ps_ignore_nets, k):
+            logger.info(f"网卡 {k} 匹配 {r.re.pattern}，忽略")
+            continue
 
         u = io2[k].bytes_sent - v.bytes_sent
         d = io2[k].bytes_recv - v.bytes_recv
