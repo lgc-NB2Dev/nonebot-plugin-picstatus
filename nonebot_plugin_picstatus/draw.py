@@ -25,7 +25,8 @@ from .util import (
     format_timedelta,
     get_anime_pic,
     get_qq_avatar,
-    get_system_name, match_list_regexp,
+    get_system_name,
+    match_list_regexp,
 )
 from .version import __version__
 
@@ -68,8 +69,7 @@ async def draw_header(bot: Bot):
     bot_stat = (await bot.get_status()).get("stat")
     if bot_stat:
         msg_rec = (
-                bot_stat.get("message_received") or bot_stat.get(
-            "MessageReceived") or "未知"
+            bot_stat.get("message_received") or bot_stat.get("MessageReceived") or "未知"
         )
         msg_sent = bot_stat.get("message_sent") or bot_stat.get("MessageSent") or "未知"
     else:
@@ -389,8 +389,7 @@ async def draw_disk_usage():
 
         for k, (r, w) in io_rw.items():
             bg_draw.text((50, top + 25), k, "black", font_45, "lm")
-            bg_draw.text((1150, top + 25), f"读 {r}/s | 写 {w}/s", "black", font_45,
-                         "rm")
+            bg_draw.text((1150, top + 25), f"读 {r}/s | 写 {w}/s", "black", font_45, "rm")
             top += 75
 
     return bg
