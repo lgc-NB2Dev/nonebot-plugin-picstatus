@@ -69,7 +69,8 @@ async def draw_header(bot: Bot):
     bot_stat = (await bot.get_status()).get("stat")
     if bot_stat:
         msg_rec = (
-            bot_stat.get("message_received") or bot_stat.get("MessageReceived") or "未知"
+                bot_stat.get("message_received") or bot_stat.get(
+            "MessageReceived") or "未知"
         )
         msg_sent = bot_stat.get("message_sent") or bot_stat.get("MessageSent") or "未知"
     else:
@@ -326,70 +327,75 @@ async def draw_disk_usage():
             100  # 上下边距
             + (50 * count)  # 每行磁盘/IO统计
             + (25 * (count - 1))  # 间隔
-            + (10 if io_rw else 0),  # 磁盘统计与IO统计间的间距
+            + (10 if disks and io_rw else 0),  # 磁盘统计与IO统计间的间距
         ),
         WHITE_BG_COLOR,
     )
     bg_draw = ImageDraw.Draw(bg)
 
-    max_len = 990 - (50 + left_padding)  # 进度条长度
-
-    its: List[Tuple[str, sdiskusage | Exception]] = disks.items()  # noqa
     top = 50
-    for i, (name, usage) in enumerate(its):
-        fail = isinstance(usage, Exception)
 
-        # 进度条背景
-        bg_draw.rectangle((50 + left_padding, top, 990, top + 50), GRAY_BG_COLOR)
+    # 画分区占用列表
+    if disks:
+        max_len = 990 - (50 + left_padding)  # 进度条长度
 
-        # 写盘符
-        bg_draw.text((50, top + 25), name, "black", font_45, "lm")
+        its: List[Tuple[str, sdiskusage | Exception]] = disks.items()  # noqa
+        for i, (name, usage) in enumerate(its):
+            fail = isinstance(usage, Exception)
 
-        # 写占用百分比
-        bg_draw.text(
-            (1150, top + 25),
-            f"{usage.percent:.1f}%" if not fail else "未知%",
-            "black",
-            font_45,
-            "rm",
-        )
+            # 进度条背景
+            bg_draw.rectangle((50 + left_padding, top, 990, top + 50), GRAY_BG_COLOR)
 
-        # 画进度条
-        if not fail:
-            bg_draw.rectangle(
-                (
-                    50 + left_padding,
-                    top,
-                    50 + left_padding + (max_len * (usage.percent / 100)),
-                    top + 50,
-                ),
-                get_usage_color(usage.percent),
+            # 写盘符
+            bg_draw.text((50, top + 25), name, "black", font_45, "lm")
+
+            # 写占用百分比
+            bg_draw.text(
+                (1150, top + 25),
+                f"{usage.percent:.1f}%" if not fail else "未知%",
+                "black",
+                font_45,
+                "rm",
             )
 
-        # 写容量信息/报错信息
-        bg_draw.text(
-            ((max_len / 2) + 50 + left_padding, top + 25),
-            (
-                f"{usage.used / 1024 / 1024 / 1024:.2f}G / {usage.total / 1024 / 1024 / 1024:.2f}G"
-                if not fail
-                else str(usage)
-            ),
-            "black",
-            font_40,
-            "mm",
-        )
+            # 画进度条
+            if not fail:
+                bg_draw.rectangle(
+                    (
+                        50 + left_padding,
+                        top,
+                        50 + left_padding + (max_len * (usage.percent / 100)),
+                        top + 50,
+                    ),
+                    get_usage_color(usage.percent),
+                )
 
-        top += 75
+            # 写容量信息/报错信息
+            bg_draw.text(
+                ((max_len / 2) + 50 + left_padding, top + 25),
+                (
+                    f"{usage.used / 1024 / 1024 / 1024:.2f}G / {usage.total / 1024 / 1024 / 1024:.2f}G"
+                    if not fail
+                    else str(usage)
+                ),
+                "black",
+                font_40,
+                "mm",
+            )
+
+            top += 75
 
     # 写IO统计
     if io_rw:
-        # 分隔线 25+10px
-        top += 10
-        bg_draw.rectangle((50, top - 17, 1150, top - 15), GRAY_BG_COLOR)
+        if disks:
+            # 分隔线 25+10px
+            top += 10
+            bg_draw.rectangle((50, top - 17, 1150, top - 15), GRAY_BG_COLOR)
 
         for k, (r, w) in io_rw.items():
             bg_draw.text((50, top + 25), k, "black", font_45, "lm")
-            bg_draw.text((1150, top + 25), f"读 {r}/s | 写 {w}/s", "black", font_45, "rm")
+            bg_draw.text((1150, top + 25), f"读 {r}/s | 写 {w}/s", "black", font_45,
+                         "rm")
             top += 75
 
     return bg
