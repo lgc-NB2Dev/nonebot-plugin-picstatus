@@ -18,7 +18,7 @@ class Cfg(BaseModel):
     ps_need_at: bool = False
     ps_mask_color: Tuple[int, int, int, int] = (255, 255, 255, 125)
     ps_bg_color: Tuple[int, int, int, int] = (255, 255, 255, 150)
-    ps_ignore_nets: Set[str] = {'^lo$', '^Loopback'}
+    ps_ignore_nets: Set[str] = {"^lo$", "^Loopback"}
     ps_ignore_no_io_disk: bool = False
     ps_ignore_0b_net: bool = False
 

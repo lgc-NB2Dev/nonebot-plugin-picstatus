@@ -68,12 +68,12 @@ async def draw_header(bot: Bot):
     # bot状态信息
     bot_stat = (await bot.get_status()).get("stat")
     if bot_stat:
-        msg_rec = (bot_stat.get("message_received") or bot_stat.get(
-            "MessageReceived") or '未知')
-        msg_sent = (bot_stat.get("message_sent") or bot_stat.get(
-            "MessageSent") or '未知')
+        msg_rec = (
+            bot_stat.get("message_received") or bot_stat.get("MessageReceived") or "未知"
+        )
+        msg_sent = bot_stat.get("message_sent") or bot_stat.get("MessageSent") or "未知"
     else:
-        msg_rec = msg_sent = '未知'
+        msg_rec = msg_sent = "未知"
 
     nick = (
         list(config.nickname)[0]
@@ -236,7 +236,9 @@ async def draw_cpu_memory_usage():
         f"{swap_stat.used / 1024 / 1024:.2f}M" if swap_stat.total > 0 else "未知"
     )
     swap_free_t = (
-        f"{(swap_stat.total - swap_stat.used) / 1024 / 1024:.2f}M" if swap_stat.total > 0 else "未知"
+        f"{(swap_stat.total - swap_stat.used) / 1024 / 1024:.2f}M"
+        if swap_stat.total > 0
+        else "未知"
     )
     bg_draw.text(
         (1000, 470),
@@ -306,7 +308,7 @@ async def draw_disk_usage():
             _w = io2[_k].write_bytes - _v.write_bytes
 
             if _r == 0 and _w == 0 and config.ps_ignore_no_io_disk:
-                logger.info(f'IO统计 忽略无IO磁盘 {_k}')
+                logger.info(f"IO统计 忽略无IO磁盘 {_k}")
                 continue
 
             io_rw[_k] = (format_byte_count(_r), format_byte_count(_w))
@@ -389,8 +391,7 @@ async def draw_disk_usage():
 
         for k, (r, w) in io_rw.items():
             bg_draw.text((50, top + 25), k, "black", font_45, "lm")
-            bg_draw.text((1150, top + 25), f"读 {r}/s | 写 {w}/s", "black", font_45,
-                         "rm")
+            bg_draw.text((1150, top + 25), f"读 {r}/s | 写 {w}/s", "black", font_45, "rm")
             top += 75
 
     return bg
