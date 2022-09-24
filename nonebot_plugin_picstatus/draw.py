@@ -314,7 +314,7 @@ async def draw_disk_usage():
     left_padding, _ = await asyncio.gather(get_disk_usage(), get_disk_io())
 
     # 列表为空直接返回
-    if not (disks and io_rw):
+    if not (disks or io_rw):
         return
 
     # 计算图片高度，创建背景图
