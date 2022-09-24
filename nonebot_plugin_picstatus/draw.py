@@ -313,7 +313,7 @@ async def draw_disk_usage():
 
             io_rw[_k] = (format_byte_count(_r), format_byte_count(_w))
 
-    left_padding, _ = asyncio.gather(get_disk_usage(), get_disk_io())
+    left_padding, _ = await asyncio.gather(get_disk_usage(), get_disk_io())
 
     # 列表为空直接返回
     if not (disks and io_rw):
