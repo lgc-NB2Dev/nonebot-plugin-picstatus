@@ -22,12 +22,13 @@ def trigger_rule():
     return Rule(*checkers)
 
 
-stat_matcher = on_command("运行状态", aliases={"状态"}, rule=trigger_rule())
+stat_matcher = on_command("运行状态", aliases={"状态", "zt", "yxzt", "status"},
+                          rule=trigger_rule())
 
 
 @stat_matcher.handle()
 async def _(
-    bot: Bot, event: MessageEvent, matcher: Matcher, arg: Message = CommandArg()
+        bot: Bot, event: MessageEvent, matcher: Matcher, arg: Message = CommandArg()
 ):
     pic = None
 

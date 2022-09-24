@@ -1,9 +1,10 @@
 import asyncio
 import platform
+import re
 import time
 from datetime import datetime
 from io import BytesIO
-from typing import Dict, Optional, Union, List, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import nonebot
 import psutil
@@ -65,9 +66,15 @@ async def draw_header(bot: Bot):
         avatar = await async_open_img(DEFAULT_AVATAR_PATH)
 
     # bot状态信息
-    bot_stat = (await bot.get_status())["stat"]
-    msg_rec = bot_stat["message_received"]
-    msg_sent = bot_stat["message_sent"]
+    bot_stat = (await bot.get_status()).get("stat")
+    if bot_stat:
+        msg_rec = (bot_stat.get("message_received") or bot_stat.get(
+            "MessageReceived") or '未知')
+        msg_sent = (bot_stat.get("message_sent") or bot_stat.get(
+            "MessageSent") or '未知')
+    else:
+        msg_rec = msg_sent = '未知'
+
     nick = (
         list(config.nickname)[0]
         if config.ps_use_env_nick
@@ -218,7 +225,7 @@ async def draw_cpu_memory_usage():
     )
     bg_draw.text(
         (600, 500),
-        f"空闲 {ram_stat.free / 1024 / 1024:.2f}M",
+        f"空闲 {(ram_stat.total - ram_stat.used) / 1024 / 1024:.2f}M",
         "darkslategray",
         font_25,
         "ms",
@@ -229,7 +236,7 @@ async def draw_cpu_memory_usage():
         f"{swap_stat.used / 1024 / 1024:.2f}M" if swap_stat.total > 0 else "未知"
     )
     swap_free_t = (
-        f"{swap_stat.free / 1024 / 1024:.2f}M" if swap_stat.total > 0 else "未知"
+        f"{(swap_stat.total - swap_stat.used) / 1024 / 1024:.2f}M" if swap_stat.total > 0 else "未知"
     )
     bg_draw.text(
         (1000, 470),
@@ -250,48 +257,65 @@ async def draw_cpu_memory_usage():
 
 
 async def draw_disk_usage():
+    disks = {}
+    io_rw = {}
+
     font_45 = get_font(45)
     font_40 = get_font(40)
 
-    # 获取磁盘状态
-    disks = {}
-    left_padding = 0
-    for d in psutil.disk_partitions():
-        # 忽略分区
-        if d.mountpoint in config.ps_ignore_parts:
-            logger.info(f"空间读取 忽略分区 {d.mountpoint}")
-            continue
+    async def get_disk_usage():
+        """获取磁盘占用，返回左边距"""
+        lp = 0  # 没办法，没办法给外层变量赋值
 
-        # 根据盘符长度计算左侧留空长度用于写字
-        s = font_45.getlength(d.mountpoint) + 25
-        if s > left_padding:
-            left_padding = s
+        # 获取磁盘状态
+        for _d in psutil.disk_partitions():
+            # 忽略分区
+            for _r in config.ps_ignore_parts:
+                if re.search(_r, _d.mountpoint):
+                    logger.info(f"空间读取 分区 {_d.mountpoint} 匹配 {_r}，忽略")
+                    continue
 
-        try:
-            disks[d.mountpoint] = psutil.disk_usage(d.mountpoint)
-        except Exception as e:
-            logger.exception(f"读取 {d.mountpoint} 占用失败")
-            if not config.ps_ignore_bad_parts:
-                disks[d.mountpoint] = e
+            # 根据盘符长度计算左侧留空长度用于写字
+            s = font_45.getlength(_d.mountpoint) + 25
+            if s > lp:
+                lp = s
+
+            try:
+                disks[_d.mountpoint] = psutil.disk_usage(_d.mountpoint)
+            except Exception as e:
+                logger.exception(f"读取 {_d.mountpoint} 占用失败")
+                if not config.ps_ignore_bad_parts:
+                    disks[_d.mountpoint] = e
+
+        return lp
+
+    async def get_disk_io():
+        """获取磁盘IO"""
+        io1: Dict[str, sdiskio] = psutil.disk_io_counters(True)
+        await asyncio.sleep(1)
+        io2: Dict[str, sdiskio] = psutil.disk_io_counters(True)
+
+        for _k, _v in io1.items():
+            # 忽略分区
+            for _r in config.ps_ignore_disk_ios:
+                if re.search(_r, _k):
+                    logger.info(f"IO统计 磁盘 {_k} 匹配 {_r}，忽略")
+                    continue
+
+            _r = io2[_k].read_bytes - _v.read_bytes
+            _w = io2[_k].write_bytes - _v.write_bytes
+
+            if _r == 0 and _w == 0 and config.ps_ignore_no_io_disk:
+                logger.info(f'IO统计 忽略无IO磁盘 {_k}')
+                continue
+
+            io_rw[_k] = (format_byte_count(_r), format_byte_count(_w))
+
+    left_padding, _ = asyncio.gather(get_disk_usage(), get_disk_io())
 
     # 列表为空直接返回
-    if not disks:
+    if not (disks and io_rw):
         return
-
-        # IO
-    io1: Dict[str, sdiskio] = psutil.disk_io_counters(True)
-    await asyncio.sleep(1)
-    io2: Dict[str, sdiskio] = psutil.disk_io_counters(True)
-    io_rw = {}
-    for k, v in io1.items():
-        # 忽略分区
-        if k in config.ps_ignore_parts:
-            logger.info(f"IO统计 忽略分区 {k}")
-            continue
-
-        r = io2[k].read_bytes - v.read_bytes
-        w = io2[k].write_bytes - v.write_bytes
-        io_rw[k] = (format_byte_count(r), format_byte_count(w))
 
     # 计算图片高度，创建背景图
     count = len(disks) + len(io_rw)
@@ -365,7 +389,8 @@ async def draw_disk_usage():
 
         for k, (r, w) in io_rw.items():
             bg_draw.text((50, top + 25), k, "black", font_45, "lm")
-            bg_draw.text((1150, top + 25), f"读 {r}/s | 写 {w}/s", "black", font_45, "rm")
+            bg_draw.text((1150, top + 25), f"读 {r}/s | 写 {w}/s", "black", font_45,
+                         "rm")
             top += 75
 
     return bg
@@ -379,12 +404,18 @@ async def draw_net_io():
 
     ios = {}
     for k, v in io1.items():
-        if k in config.ps_ignore_nets:
-            logger.info(f"忽略网卡 {k}")
-            continue
+        for r in config.ps_ignore_nets:
+            if re.search(r, k):
+                logger.info(f"网卡 {k} 匹配 {k}，忽略")
+                continue
 
         u = io2[k].bytes_sent - v.bytes_sent
         d = io2[k].bytes_recv - v.bytes_recv
+
+        if u == 0 and d == 0 and config.ps_ignore_0b_net:
+            logger.info(f"网卡 {k} 上下行0B，忽略")
+            continue
+
         ios[k] = (format_byte_count(u), format_byte_count(d))
 
     if not ios:
