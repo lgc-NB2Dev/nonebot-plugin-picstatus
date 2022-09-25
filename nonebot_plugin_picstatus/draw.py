@@ -1,5 +1,6 @@
 import asyncio
 import platform
+import random
 import time
 from datetime import datetime
 from io import BytesIO
@@ -69,7 +70,8 @@ async def draw_header(bot: Bot):
     bot_stat = (await bot.get_status()).get("stat")
     if bot_stat:
         msg_rec = (
-            bot_stat.get("message_received") or bot_stat.get("MessageReceived") or "未知"
+                bot_stat.get("message_received") or bot_stat.get(
+            "MessageReceived") or "未知"
         )
         msg_sent = bot_stat.get("message_sent") or bot_stat.get("MessageSent") or "未知"
     else:
@@ -393,7 +395,8 @@ async def draw_disk_usage():
 
         for k, (r, w) in io_rw.items():
             bg_draw.text((50, top + 25), k, "black", font_45, "lm")
-            bg_draw.text((1150, top + 25), f"读 {r}/s | 写 {w}/s", "black", font_45, "rm")
+            bg_draw.text((1150, top + 25), f"读 {r}/s | 写 {w}/s", "black", font_45,
+                         "rm")
             top += 75
 
     return bg
@@ -465,12 +468,20 @@ async def draw_footer(img: Image.Image):
 
 
 async def get_bg(pic: Union[str, bytes, BytesIO] = None) -> Image.Image:
+    if config.ps_custom_bg and (not pic):
+        pic = random.choice(config.ps_custom_bg)
+
     if pic:
         try:
             if isinstance(pic, str):
-                pic = await async_request(pic)
+                if pic.startswith('file:///'):
+                    return await async_open_img(pic.replace('file:///', '', 1))
+                else:
+                    pic = await async_request(pic)
+
             if isinstance(pic, bytes):
                 pic = BytesIO(pic)
+
             return Image.open(pic)
         except:
             logger.exception("下载/打开自定义背景图失败，使用随机背景图")
