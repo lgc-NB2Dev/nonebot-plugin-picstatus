@@ -1,7 +1,6 @@
-from typing import List, Optional, Set, Tuple
-
 from nonebot import get_driver
 from pydantic import BaseModel
+from typing import List, Optional, Set, Tuple
 
 
 class Cfg(BaseModel):
@@ -22,6 +21,7 @@ class Cfg(BaseModel):
     ps_ignore_no_io_disk: bool = False
     ps_ignore_0b_net: bool = False
     ps_custom_bg: List[str] = []
+    ps_footer_size: int = 22
 
 
 config: Cfg = Cfg.parse_obj(get_driver().config.dict())

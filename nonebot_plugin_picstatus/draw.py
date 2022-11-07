@@ -446,7 +446,7 @@ async def draw_net_io():
 
 
 async def draw_footer(img: Image.Image):
-    font_22 = get_font(22)
+    font_footer = get_font(config.ps_footer_size)
     draw = ImageDraw.Draw(img)
     w, h = img.size
     padding = 15
@@ -460,7 +460,7 @@ async def draw_footer(img: Image.Image):
             f"{time.strftime('%Y-%m-%d %H:%M:%S')}"
         ),
         "darkslategray",
-        font_22,
+        font_footer,
         "ms",
     )
 

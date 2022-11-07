@@ -117,6 +117,7 @@ _✨ 运行状态图片版 for NoneBot2 ✨_
 |    `PS_BLUR_RADIUS`    |               整数（`int`）               |  否  |           `4`           |                    背景图高斯模糊半径                    |
 |       `PS_FONT`        |               文本（`str`）               |  否  |           无            |                      自定义字体路径                      |
 |     `PS_CUSTOM_BG`     |          文本列表（`List[str]`）          |  否  |          `[]`           | 自定义背景图 URL 列表<br/>本地图请使用`file:///文件路径` |
+|    `PS_FOOTER_SIZE`    |               整数（`int`）               |  否  |          `22`           |                     底部脚注文字大小                  |
 
 ## 🎉 使用
 
