@@ -1,3 +1,5 @@
 /.vscode/
 /.idea/
 /.run/
+/venv/
+/testnb2/

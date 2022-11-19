@@ -3,7 +3,7 @@ from nonebot.adapters.onebot.v11 import Bot, Message, MessageEvent, MessageSegme
 from nonebot.internal.matcher import Matcher
 from nonebot.internal.rule import Rule
 from nonebot.params import CommandArg
-from nonebot.rule import to_me
+from nonebot.rule import ToMeRule
 
 from .config import config
 from .draw import get_stat_pic
@@ -15,9 +15,12 @@ def trigger_rule():
             return event.get_user_id() in config.superusers
         return True
 
-    checkers = [check_su]
+    def check_empty_arg(arg: Message = CommandArg()):
+        return not arg.extract_plain_text()
+
+    checkers = [check_su, check_empty_arg]
     if config.ps_need_at:
-        checkers.append(to_me)
+        checkers.append(ToMeRule())
 
     return Rule(*checkers)
 

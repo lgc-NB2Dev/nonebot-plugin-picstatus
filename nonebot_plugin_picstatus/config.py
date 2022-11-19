@@ -1,11 +1,20 @@
+from typing import List, Optional, Set, Tuple
+
 from nonebot import get_driver
 from pydantic import BaseModel
-from typing import List, Optional, Set, Tuple
+
+
+class TestSiteCfg(BaseModel):
+    name: str
+    url: str
+    use_proxy: bool = False
 
 
 class Cfg(BaseModel):
     superusers: Set[str] = set()
     nickname: Set[str] = set()
+
+    proxy: Optional[str] = None
 
     ps_only_su: bool = False
     ps_blur_radius: int = 4
@@ -22,6 +31,11 @@ class Cfg(BaseModel):
     ps_ignore_0b_net: bool = False
     ps_custom_bg: List[str] = []
     ps_footer_size: int = 22
+    ps_test_sites: List[TestSiteCfg] = [
+        TestSiteCfg(name="百度", url="https://baidu.com"),
+        TestSiteCfg(name="Google", url="https://google.com", use_proxy=True),
+    ]
+    ps_test_timeout: int = 5
 
 
 config: Cfg = Cfg.parse_obj(get_driver().config.dict())

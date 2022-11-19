@@ -9,11 +9,12 @@ from typing import Dict, List, Optional, Tuple, Union
 import nonebot
 import psutil
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from aiohttp import ClientConnectorError, ClientSession, ClientTimeout
 from nonebot import logger
 from nonebot.adapters.onebot.v11 import Bot
 from psutil._common import sdiskio, sdiskusage, snetio  # noqa
 
-from .config import config
+from .config import TestSiteCfg, config
 from .const import DEFAULT_AVATAR_PATH, DEFAULT_BG_PATH, DEFAULT_FONT_PATH
 from .statistics import (
     get_bot_connect_time,
@@ -262,13 +263,14 @@ async def draw_cpu_memory_usage():
 async def draw_disk_usage():
     disks = {}
     io_rw = {}
+    left_padding = 0
 
     font_45 = get_font(45)
     font_40 = get_font(40)
 
     async def get_disk_usage():
         """获取磁盘占用，返回左边距"""
-        lp = 0  # 没办法，没办法给外层变量赋值
+        nonlocal left_padding
 
         # 获取磁盘状态
         for _d in psutil.disk_partitions():
@@ -279,8 +281,8 @@ async def draw_disk_usage():
 
             # 根据盘符长度计算左侧留空长度用于写字
             s = font_45.getlength(_d.mountpoint) + 25
-            if s > lp:
-                lp = s
+            if s > left_padding:
+                left_padding = s
 
             try:
                 disks[_d.mountpoint] = psutil.disk_usage(_d.mountpoint)
@@ -288,8 +290,6 @@ async def draw_disk_usage():
                 logger.exception(f"读取 {_d.mountpoint} 占用失败")
                 if not config.ps_ignore_bad_parts:
                     disks[_d.mountpoint] = e
-
-        return lp
 
     async def get_disk_io():
         """获取磁盘IO"""
@@ -312,7 +312,7 @@ async def draw_disk_usage():
 
             io_rw[_k] = (format_byte_count(_r), format_byte_count(_w))
 
-    left_padding, _ = await asyncio.gather(get_disk_usage(), get_disk_io())
+    await asyncio.gather(get_disk_usage(), get_disk_io())
 
     # 列表为空直接返回
     if not (disks or io_rw):
@@ -401,46 +401,105 @@ async def draw_disk_usage():
 
 
 async def draw_net_io():
-    # 获取IO
-    io1: Dict[str, snetio] = psutil.net_io_counters(True)
-    await asyncio.sleep(1)
-    io2: Dict[str, snetio] = psutil.net_io_counters(True)
-
     ios = {}
-    for k, v in io1.items():
-        if r := match_list_regexp(config.ps_ignore_nets, k):
-            logger.info(f"网卡 {k} 匹配 {r.re.pattern}，忽略")
-            continue
+    connections: List[Tuple[str, Union[Tuple[int, float], Exception]]] = []
 
-        u = io2[k].bytes_sent - v.bytes_sent
-        d = io2[k].bytes_recv - v.bytes_recv
+    async def get_net_io():
+        """网络IO"""
 
-        if u == 0 and d == 0 and config.ps_ignore_0b_net:
-            logger.info(f"网卡 {k} 上下行0B，忽略")
-            continue
+        io1: Dict[str, snetio] = psutil.net_io_counters(True)
+        await asyncio.sleep(1)
+        io2: Dict[str, snetio] = psutil.net_io_counters(True)
 
-        ios[k] = (format_byte_count(u), format_byte_count(d))
+        for k_, v in io1.items():
+            if r := match_list_regexp(config.ps_ignore_nets, k_):
+                logger.info(f"网卡 {k_} 匹配 {r.re.pattern}，忽略")
+                continue
 
-    if not ios:
+            u_ = io2[k_].bytes_sent - v.bytes_sent
+            d_ = io2[k_].bytes_recv - v.bytes_recv
+
+            if u_ == 0 and d_ == 0 and config.ps_ignore_0b_net:
+                logger.info(f"网卡 {k_} 上下行0B，忽略")
+                continue
+
+            ios[k_] = (format_byte_count(u_), format_byte_count(d_))
+
+    async def get_net_connection():
+        """网络连通性"""
+        nonlocal connections
+
+        async def get_result(site: TestSiteCfg):
+            try:
+                async with ClientSession(
+                    timeout=ClientTimeout(total=config.ps_test_timeout)
+                ) as c:
+                    time1 = time.time()
+                    async with c.get(
+                        site.url, proxy=config.proxy if site.use_proxy else None
+                    ) as r:
+                        time2 = time.time() - time1
+                        connections.append((site.name, (r.status, time2 * 1000)))
+
+            except Exception as e:
+                logger.opt(exception=e).exception(f"网页 {site.name}({site.url}) 访问失败")
+                connections.append((site.name, e))
+
+        await asyncio.gather(*[get_result(x) for x in config.ps_test_sites])
+
+    await asyncio.gather(get_net_io(), get_net_connection())
+
+    if not (ios and connections):
         return None
 
     font_45 = get_font(45)
 
     # 计算图片高度并新建图片
-    count = len(ios)
+    count = len(ios) + len(connections)
     bg = Image.new(
         "RGBA",
-        (1200, 100 + (50 * count) + (25 * (count - 1))),  # 上下边距  # 每行磁盘/IO统计  # 间隔
+        (
+            1200,
+            100  # 上下边距
+            + (50 * count)  # 每行磁盘/IO统计
+            + (25 * (count - 1))  # 间隔
+            + (10 if ios and connections else 0),  # 网络IO与连通性间距
+        ),
         WHITE_BG_COLOR,
     )
     draw = ImageDraw.Draw(bg)
 
     # 写字
     top = 50
-    for k, (u, d) in ios.items():
-        draw.text((50, top + 25), k, "black", font_45, "lm")
-        draw.text((1150, top + 25), f"↑ {u}/s | ↓ {d}/s", "black", font_45, "rm")
-        top += 75
+    if ios:
+        for k, (u, d) in ios.items():
+            draw.text((50, top + 25), k, "black", font_45, "lm")
+            draw.text((1150, top + 25), f"↑ {u}/s | ↓ {d}/s", "black", font_45, "rm")
+            top += 75
+
+    if connections:
+        if ios:
+            # 分隔线 25+10px
+            top += 10
+            draw.rectangle((50, top - 17, 1150, top - 15), GRAY_BG_COLOR)
+
+        for k, v in connections:
+            if isinstance(v, Exception):
+                if isinstance(v, asyncio.TimeoutError):
+                    tip = "超时"
+                elif isinstance(v, ClientConnectorError):
+                    tip = f"[{v.os_error.errno}] {v.os_error.strerror}"
+                else:
+                    tip = v.__class__.__name__
+            else:
+                code, latency = v
+                tip = str(code)
+                if code == 200:
+                    tip += f" | {latency:.2f}ms"
+
+            draw.text((50, top + 25), k, "black", font_45, "lm")
+            draw.text((1150, top + 25), tip, "black", font_45, "rm")
+            top += 75
 
     return bg
 
