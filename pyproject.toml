@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nonebot-plugin-picstatus"
-version = "0.2.5"
+version = "0.3.0"
 description = "A NoneBot2 plugin generates a picture which shows the status of current device"
 authors = ["student_2333 <lgc2333@126.com>"]
 license = "MIT"

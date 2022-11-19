@@ -38,7 +38,12 @@ _✨ 运行状态图片版 for NoneBot2 ✨_
 
 ### 效果图
 
+<details>
+  <summary>点击展开</summary>
+
 ![example](https://raw.githubusercontent.com/lgc2333/nonebot-plugin-picstatus/master/readme/example.png)
+
+</details>
 
 ## 💿 安装
 
@@ -99,25 +104,7 @@ _✨ 运行状态图片版 for NoneBot2 ✨_
 
 ## ⚙️ 配置
 
-在 nonebot2 项目的`.env`文件中添加下表中的必填配置
-
-|         配置项         |                   类型                    | 必填 |         默认值          |                           说明                           |
-| :--------------------: | :---------------------------------------: | :--: | :---------------------: | :------------------------------------------------------: |
-|      `PS_ONLY_SU`      |             布尔值（`bool`）              |  否  |         `False`         |              是否只能由`SuperUsers`触发指令              |
-|      `PS_NEED_AT`      |             布尔值（`bool`）              |  否  |         `False`         |                   触发指令是否需要@Bot                   |
-|   `PS_USE_ENV_NICK`    |             布尔值（`bool`）              |  否  |         `False`         |   使用`.env.*`中配置的`NICKNAME`作为图片上的 Bot 昵称    |
-|   `PS_IGNORE_PARTS`    |          文本列表（`List[str]`）          |  否  |          `[]`           |  分区列表里忽略的盘符（挂载点）<br/>使用正则表达式匹配   |
-| `PS_IGNORE_BAD_PARTS`  |             布尔值（`bool`）              |  否  |         `False`         |              忽略获取容量状态失败的磁盘分区              |
-|  `PS_IGNORE_DISK_IOS`  |          文本列表（`List[str]`）          |  否  |          `[]`           |  磁盘 IO 统计列表中忽略的磁盘名<br/>使用正则表达式匹配   |
-|    `PS_IGNORE_NETS`    |          文本列表（`List[str]`）          |  否  | `["^lo$", "^Loopback"]` |     网速列表中忽略的网络名称<br/>使用正则表达式匹配      |
-| `PS_IGNORE_NO_IO_DISK` |             布尔值（`bool`）              |  否  |         `False`         |               是否忽略 IO 都为 0B/s 的磁盘               |
-|   `PS_IGNORE_0B_NET`   |             布尔值（`bool`）              |  否  |         `False`         |              是否忽略上下行都为 0B/s 的网卡              |
-|    `PS_MASK_COLOR`     | 4 整数元组（`Tuple[int, int, int, int]`） |  否  | `[255, 255, 255, 125]`  |                      背景图遮罩颜色                      |
-|     `PS_BG_COLOR`      | 4 整数元组（`Tuple[int, int, int, int]`） |  否  | `[255, 255, 255, 150]`  |                    各状态矩形背景底色                    |
-|    `PS_BLUR_RADIUS`    |               整数（`int`）               |  否  |           `4`           |                    背景图高斯模糊半径                    |
-|       `PS_FONT`        |               文本（`str`）               |  否  |           无            |                      自定义字体路径                      |
-|     `PS_CUSTOM_BG`     |          文本列表（`List[str]`）          |  否  |          `[]`           | 自定义背景图 URL 列表<br/>本地图请使用`file:///文件路径` |
-|    `PS_FOOTER_SIZE`    |               整数（`int`）               |  否  |          `22`           |                     底部脚注文字大小                  |
+见[.env.example](https://github.com/lgc2333/nonebot-plugin-picstatus/blob/master/.env.example)
 
 ## 🎉 使用
 
@@ -152,12 +139,17 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ## 📝 更新日志
 
-### 0.2.5
+### 0.3.0
 
 配置项更新详见 [配置](#️-配置)
 
-- 更新配置项 `PS_FOOTER_SIZE`
+- 更新配置项 `PS_TEST_SITES` `PS_TEST_TIMEOUT`
+- 修复`PS_NEED_AT`配置无效的 bug
+- 现在只有命令完全匹配时才会触发
 
+### 0.2.5
+
+- 更新配置项 `PS_FOOTER_SIZE`
 
 ### 0.2.4
 
