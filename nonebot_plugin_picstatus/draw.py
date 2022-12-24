@@ -339,7 +339,7 @@ async def draw_disk_usage():
     if disks:
         max_len = 990 - (50 + left_padding)  # 进度条长度
 
-        its: List[Tuple[str, sdiskusage | Exception]] = disks.items()  # noqa
+        its: List[Tuple[str, Union[sdiskusage, Exception]]] = disks.items()  # noqa
         for name, usage in its:
             fail = isinstance(usage, Exception)
 
