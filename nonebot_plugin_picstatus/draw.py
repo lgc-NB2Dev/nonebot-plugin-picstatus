@@ -79,7 +79,7 @@ async def draw_header(bot: Bot):
 
     nick = (
         list(config.nickname)[0]
-        if config.ps_use_env_nick
+        if (config.ps_use_env_nick and config.nickname)
         else (await bot.get_login_info())["nickname"]
     )
     bot_connected = (
