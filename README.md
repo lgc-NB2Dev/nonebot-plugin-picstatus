@@ -41,7 +41,7 @@ _✨ 运行状态图片版 for NoneBot2 ✨_
 <details>
   <summary>点击展开</summary>
 
-![example](https://raw.githubusercontent.com/lgc2333/nonebot-plugin-picstatus/master/readme/example.png)
+![example](https://media.githubusercontent.com/media/lgc-NB2Dev/readme/main/picstatus/example.png)
 
 </details>
 
