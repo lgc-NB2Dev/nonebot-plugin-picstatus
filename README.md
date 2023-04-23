@@ -121,9 +121,13 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ## 💡 鸣谢
 
-### [故梦 API](https://api.gmit.vip)
+### [LoliApi](https://docs.loliapi.com/)
 
 - 随机背景图来源
+
+### [故梦 API](https://api.gmit.vip)
+
+- 随机背景图来源（炸掉了）
 
 ## 💰 赞助
 
@@ -138,6 +142,11 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
   </details>
 
 ## 📝 更新日志
+
+### 0.3.3
+
+- 修了点 bug
+- 新配置 `PS_MAX_TEXT_LEN`
 
 ### 0.3.2
 

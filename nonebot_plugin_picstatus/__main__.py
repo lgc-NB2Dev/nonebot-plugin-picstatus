@@ -26,22 +26,26 @@ def trigger_rule():
 
 
 stat_matcher = on_command(
-    "运行状态", aliases={"状态", "zt", "yxzt", "status"}, rule=trigger_rule()
+    "运行状态",
+    aliases={"状态", "zt", "yxzt", "status"},
+    rule=trigger_rule(),
 )
 
 
 @stat_matcher.handle()
 async def _(
-    bot: Bot, event: MessageEvent, matcher: Matcher, arg: Message = CommandArg()
+    bot: Bot,
+    event: MessageEvent,
+    matcher: Matcher,
+    arg: Message = CommandArg(),
 ):
     pic = None
 
     if img := arg["image"]:
         pic = img[0].data["url"]
 
-    if event.reply:
-        if img := event.reply.message["image"]:
-            pic = img[0].data["url"]
+    if event.reply and (img := event.reply.message["image"]):
+        pic = img[0].data["url"]
 
     try:
         ret = await get_stat_pic(bot, pic)
@@ -50,3 +54,4 @@ async def _(
         return await matcher.finish("获取运行状态图片失败，请检查后台输出")
 
     await matcher.finish(MessageSegment.image(ret))
+    return None

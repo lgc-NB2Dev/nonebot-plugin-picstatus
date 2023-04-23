@@ -3,3 +3,5 @@
 /.run/
 /venv/
 /testnb2/
+.pdm-python
+build/

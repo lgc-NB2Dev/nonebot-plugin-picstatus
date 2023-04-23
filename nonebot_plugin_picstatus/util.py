@@ -1,13 +1,14 @@
-import json
 import platform
 import re
 from datetime import timedelta
 from io import BytesIO
 
 import aiofiles
-from PIL import Image
 from aiohttp import ClientSession
 from nonebot import logger
+from PIL import Image
+
+from .config import config
 
 
 def format_timedelta(t: timedelta):
@@ -28,10 +29,7 @@ async def async_request(url, *args, is_text=False, **kwargs):
 
 
 async def get_anime_pic():
-    r: str = await async_request(
-        "https://api.gmit.vip/Api/DmImg?format=json", is_text=True
-    )
-    return await async_request(json.loads(r)["data"]["url"])
+    return await async_request("https://www.loliapi.com/acg/pe/")
 
 
 async def get_qq_avatar(qq):
@@ -65,8 +63,8 @@ async def get_system_name():
         else:
             v = v.replace(r"\n", "").replace(r"\l", "").strip()
         return f"{v} {machine}"
-    else:
-        return f"{system} {release}"
+
+    return f"{system} {release}"
 
 
 def format_byte_count(b: int):
@@ -83,3 +81,12 @@ def match_list_regexp(reg_list, txt):
     for r in reg_list:
         if m := re.search(r, txt):
             return m
+    return None
+
+
+def process_text_len(text: str) -> str:
+    real_max_len = config.ps_max_text_len - 3
+    if len(text) > real_max_len:
+        text = f"{text[:real_max_len]}..."
+
+    return text  # noqa: RET504
