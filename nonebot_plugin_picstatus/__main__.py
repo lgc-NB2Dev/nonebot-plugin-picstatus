@@ -51,7 +51,6 @@ async def _(
         ret = await get_stat_pic(bot, pic)
     except:
         logger.exception("获取运行状态图失败")
-        return await matcher.finish("获取运行状态图片失败，请检查后台输出")
+        await matcher.finish("获取运行状态图片失败，请检查后台输出")
 
     await matcher.finish(MessageSegment.image(ret))
-    return None

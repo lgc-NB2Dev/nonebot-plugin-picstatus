@@ -281,17 +281,18 @@ async def draw_disk_usage():
                 logger.info(f"空间读取 分区 {_d.mountpoint} 匹配 {_r.re.pattern}，忽略")
                 continue
 
+            display_text = process_text_len(_d.mountpoint)
             # 根据盘符长度计算左侧留空长度用于写字
-            s = font_45.getlength(_d.mountpoint) + 25
+            s = font_45.getlength(display_text) + 25
             if s > left_padding:
                 left_padding = s
 
             try:
-                disks[_d.mountpoint] = psutil.disk_usage(_d.mountpoint)
+                disks[display_text] = psutil.disk_usage(_d.mountpoint)
             except Exception as e:
                 logger.exception(f"读取 {_d.mountpoint} 占用失败")
                 if not config.ps_ignore_bad_parts:
-                    disks[_d.mountpoint] = e
+                    disks[display_text] = e
 
     async def get_disk_io():
         """获取磁盘IO"""
