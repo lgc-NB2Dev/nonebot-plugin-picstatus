@@ -36,7 +36,7 @@ class Cfg(BaseModel):
         TestSiteCfg(name="Google", url="https://google.com", use_proxy=True),
     ]
     ps_test_timeout: int = 5
-    ps_max_text_len: int = 13
+    ps_max_text_len: int = 18
 
 
 config: Cfg = Cfg.parse_obj(get_driver().config.dict())
