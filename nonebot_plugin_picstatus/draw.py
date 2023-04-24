@@ -420,7 +420,6 @@ async def draw_net_io():
                 logger.info(f"网卡 {k_} 匹配 {r.re.pattern}，忽略")
                 continue
 
-            k_ = process_text_len(k_)
             u_ = io2[k_].bytes_sent - v.bytes_sent
             d_ = io2[k_].bytes_recv - v.bytes_recv
 
@@ -428,6 +427,7 @@ async def draw_net_io():
                 logger.info(f"网卡 {k_} 上下行0B，忽略")
                 continue
 
+            k_ = process_text_len(k_)
             ios[k_] = (format_byte_count(u_), format_byte_count(d_))
 
     async def get_net_connection():
