@@ -195,15 +195,18 @@ async def draw_cpu_memory_usage():
 
     # 写详细信息
     # CPU
-    if cpu_freq.max == 0:
-        if cpu_freq.current == 0:
-            freq_t = "主频未知"
+    try:
+        if cpu_freq.max == 0:
+            if cpu_freq.current == 0:
+                freq_t = "主频未知"
+            else:
+                freq_t = f"当前 {cpu_freq.current:.0f}MHz"
+        elif cpu_freq.max == cpu_freq.current:
+            freq_t = f"最大 {cpu_freq.max:.0f}MHz"
         else:
-            freq_t = f"当前 {cpu_freq.current:.0f}MHz"
-    elif cpu_freq.max == cpu_freq.current:
-        freq_t = f"最大 {cpu_freq.max:.0f}MHz"
-    else:
-        freq_t = f"{cpu_freq.current:.0f}MHz / {cpu_freq.max:.0f}MHz"
+            freq_t = f"{cpu_freq.current:.0f}MHz / {cpu_freq.max:.0f}MHz"
+    except AttributeError:
+        freq_t = "主频未知"
     bg_draw.text(
         (200, 470),
         f"{cpu_count}核 {cpu_count_logical}线程",
