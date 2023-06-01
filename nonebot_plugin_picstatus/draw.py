@@ -6,9 +6,10 @@ from datetime import datetime
 from io import BytesIO
 from typing import Dict, List, Optional, Tuple, Union, cast
 
+import httpx
 import nonebot
 import psutil
-from aiohttp import ClientConnectorError, ClientSession, ClientTimeout
+from httpx import AsyncClient
 from nonebot import logger
 from nonebot.internal.adapter import Bot
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -454,26 +455,28 @@ async def draw_net_io():
 
     async def get_net_connection():
         """网络连通性"""
-        nonlocal connections
+
+        tested_conn: Dict[str, Union[Tuple[int, float], Exception]] = {}
 
         async def get_result(site: TestSiteCfg):
             try:
-                async with ClientSession(
-                    timeout=ClientTimeout(total=config.ps_test_timeout),
+                async with AsyncClient(
+                    timeout=config.ps_test_timeout,
+                    proxies=config.proxy if site.use_proxy else None,
                 ) as c:
                     time1 = time.time()
-                    async with c.get(
-                        site.url,
-                        proxy=config.proxy if site.use_proxy else None,
-                    ) as r:
-                        time2 = time.time() - time1
-                        connections.append((site.name, (r.status, time2 * 1000)))
+                    r = await c.get(site.url)
+                    time2 = time.time() - time1
+                    tested_conn[site.name] = (r.status_code, time2 * 1000)
 
             except Exception as e:
                 logger.opt(exception=e).exception(f"网页 {site.name}({site.url}) 访问失败")
-                connections.append((site.name, e))
+                tested_conn[site.name] = e
 
         await asyncio.gather(*[get_result(x) for x in config.ps_test_sites])
+        connections.extend(
+            [(x.name, tested_conn[x.name]) for x in config.ps_test_sites],
+        )
 
     await asyncio.gather(get_net_io(), get_net_connection())
 
@@ -513,10 +516,10 @@ async def draw_net_io():
 
         for k, v in connections:
             if isinstance(v, Exception):
-                if isinstance(v, asyncio.TimeoutError):
+                if isinstance(v, httpx.ReadTimeout):
                     tip = "超时"
-                elif isinstance(v, ClientConnectorError):
-                    tip = f"[{v.os_error.errno}] {v.os_error.strerror}"
+                # elif isinstance(v, ClientConnectorError):
+                #     tip = f"[{v.os_error.errno}] {v.os_error.strerror}"
                 else:
                     tip = v.__class__.__name__
             else:
