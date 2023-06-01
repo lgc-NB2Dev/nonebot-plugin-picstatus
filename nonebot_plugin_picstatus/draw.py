@@ -94,11 +94,13 @@ async def draw_header(bot: Bot):
 
     avatar = await get_bot_avatar(bot)
     if not nick:
-        nick = list(config.nickname)[0]
-    if not msg_rec:
-        msg_rec = f"{recv_num.get(bot.self_id) or '未知'}"
-    if not msg_sent:
-        msg_sent = f"{send_num.get(bot.self_id) or '未知'}"
+        nick = list(config.nickname)[0] if config.nickname else "Bot"
+    if msg_rec is None:
+        num = recv_num.get(bot.self_id)
+        msg_rec = "未知" if num is None else str(num)
+    if msg_sent is None:
+        num = send_num.get(bot.self_id)
+        msg_sent = "未知" if num is None else str(num)
 
     # 通用数据
     bot_connected = (
@@ -463,6 +465,7 @@ async def draw_net_io():
                 async with AsyncClient(
                     timeout=config.ps_test_timeout,
                     proxies=config.proxy if site.use_proxy else None,
+                    follow_redirects=True,
                 ) as c:
                     time1 = time.time()
                     r = await c.get(site.url)

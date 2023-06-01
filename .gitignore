@@ -5,3 +5,4 @@
 /testnb2/
 .pdm-python
 build/
+__pycache__

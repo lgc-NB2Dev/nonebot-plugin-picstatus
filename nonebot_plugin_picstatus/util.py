@@ -1,3 +1,4 @@
+import json
 import platform
 import re
 from datetime import timedelta
@@ -58,13 +59,17 @@ async def async_request(
 
 
 async def async_request(url: str, *args, is_text=False, proxy=None, **kwargs):
-    async with AsyncClient(proxies=proxy) as cli:
+    async with AsyncClient(proxies=proxy, follow_redirects=True) as cli:
         res = await cli.get(url, *args, **kwargs)
         return res.text if is_text else res.content
 
 
 async def get_anime_pic():
-    return await async_request("https://www.loliapi.com/acg/pe/")
+    data = json.loads(
+        await async_request("https://api.gumengya.com/Api/DmImg", is_text=True),
+    )
+    assert str(data.get("code")) == "200"
+    return await async_request(data["data"]["url"])
 
 
 async def get_qq_avatar(qq):
