@@ -69,8 +69,8 @@ def get_usage_color(usage: float):
 async def draw_header(bot: Bot):
     # 平台兼容处理
     nick: Optional[str] = None
-    msg_rec = recv_num.get(bot.self_id) or "未知"
-    msg_sent = send_num.get(bot.self_id) or "未知"
+    msg_rec: Optional[str] = None
+    msg_sent: Optional[str] = None
 
     if OBV11Bot and isinstance(bot, OBV11Bot):
         bot_stat = (await bot.get_status()).get("stat")
@@ -95,9 +95,9 @@ async def draw_header(bot: Bot):
     if not nick:
         nick = list(config.nickname)[0]
     if not msg_rec:
-        msg_rec = recv_num.get(bot.self_id) or "未知"
+        msg_rec = f"{recv_num.get(bot.self_id) or '未知'}"
     if not msg_sent:
-        msg_sent = send_num.get(bot.self_id) or "未知"
+        msg_sent = f"{send_num.get(bot.self_id) or '未知'}"
 
     # 通用数据
     bot_connected = (
@@ -365,9 +365,7 @@ async def draw_disk_usage():
     if disks:
         max_len = 990 - (50 + left_padding)  # 进度条长度
 
-        its: List[
-            Tuple[str, Union[sdiskusage, Exception]]
-        ] = disks.items()  # type: ignore  # noqa: PGH003
+        its = cast(List[Tuple[str, Union[sdiskusage, Exception]]], disks.items())
         for name, usage in its:
             fail = isinstance(usage, Exception)
 
@@ -555,15 +553,15 @@ async def draw_footer(img: Image.Image):
 
 
 async def get_bg(pic: Optional[Union[bytes, Image.Image]] = None) -> Image.Image:
+    if isinstance(pic, Image.Image):
+        return pic
+
     if isinstance(pic, bytes):
         try:
             return Image.open(BytesIO(pic))
         except:
-            logger.exception("打开自定义背景图失败，使用随机背景图")
+            logger.exception("打开用户自定义背景图失败，弃用")
             pic = None
-
-    if isinstance(pic, Image.Image):
-        return pic
 
     if config.ps_custom_bg and (not pic):
         url = random.choice(config.ps_custom_bg)
@@ -582,17 +580,20 @@ async def get_bg(pic: Optional[Union[bytes, Image.Image]] = None) -> Image.Image
     return await async_open_img(DEFAULT_BG_PATH)
 
 
-async def get_stat_pic(bot: Bot, bg_arg: Optional[Image.Image] = None) -> bytes:
+async def get_stat_pic(bot: Bot, bg_arg: Optional[bytes] = None) -> bytes:
     img_w = 1300
     img_h = 50  # 这里是上边距，留给下面代码统计图片高度
 
     # 获取背景及各模块图片
-    ret: List[Optional[Image.Image]] = await asyncio.gather(  # type: ignore  # noqa: PGH003
-        get_bg(bg_arg),
-        draw_header(bot),
-        draw_cpu_memory_usage(),
-        draw_disk_usage(),
-        draw_net_io(),
+    ret = cast(
+        List[Optional[Image.Image]],
+        await asyncio.gather(
+            get_bg(bg_arg),
+            draw_header(bot),
+            draw_cpu_memory_usage(),
+            draw_disk_usage(),
+            draw_net_io(),
+        ),
     )
     bg = cast(Image.Image, ret[0])
     ret = ret[1:]

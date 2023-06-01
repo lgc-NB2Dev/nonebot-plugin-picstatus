@@ -1,4 +1,3 @@
-from io import BytesIO
 from typing import Optional
 
 from nonebot import logger, on_command
@@ -8,7 +7,7 @@ from nonebot.internal.rule import Rule
 from nonebot.params import CommandArg
 from nonebot.rule import ToMeRule
 from nonebot_plugin_saa import Image, MessageFactory
-from PIL import Image as PILImage
+from nonebot_plugin_saa.utils.platform_send_target import extract_target
 
 from .config import config
 from .draw import get_stat_pic
@@ -21,8 +20,22 @@ except:
 
 try:
     from nonebot.adapters.telegram.event import MessageEvent as TGMessageEvent
+    from nonebot.adapters.telegram.message import File
 except:
     TGMessageEvent = None
+
+
+async def supported_platform_rule(event: Event):
+    if TGMessageEvent and isinstance(event, TGMessageEvent):
+        return True
+
+    try:
+        extract_target(event)
+    except RuntimeError:
+        logger.warning("SAA 不支持的平台，取消响应")
+        return False
+
+    return True
 
 
 def trigger_rule():
@@ -34,7 +47,7 @@ def trigger_rule():
     def check_empty_arg(arg: Message = CommandArg()):
         return not arg.extract_plain_text()
 
-    checkers = [check_su, check_empty_arg]
+    checkers = [supported_platform_rule, check_su, check_empty_arg]
     if config.ps_need_at:
         checkers.append(ToMeRule())
 
@@ -86,12 +99,10 @@ async def _(
     matcher: Matcher,
 ):
     pic = None
-
-    if data := await extract_msg_pic(bot, event):
-        try:
-            pic = PILImage.open(BytesIO(data))
-        except:
-            logger.exception("获取消息中附带图片失败，回退到默认行为")
+    try:
+        pic = await extract_msg_pic(bot, event)
+    except:
+        logger.exception("获取消息中附带图片失败，回退到默认行为")
 
     try:
         ret = await get_stat_pic(bot, pic)
@@ -99,4 +110,12 @@ async def _(
         logger.exception("获取运行状态图失败")
         await matcher.finish("获取运行状态图片失败，请检查后台输出")
 
-    await MessageFactory(Image(ret)).send()
+    # 为什么 SAA 还不发版支持 TG
+    # 哼哼啊啊啊啊啊啊啊啊啊啊啊啊
+    if TGMessageEvent and isinstance(event, TGMessageEvent):
+        await matcher.send(File.photo(ret))
+
+    else:
+        await MessageFactory(Image(ret)).send()
+
+    await matcher.finish()
