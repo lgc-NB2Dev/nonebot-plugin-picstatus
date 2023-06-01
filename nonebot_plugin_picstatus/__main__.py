@@ -1,16 +1,17 @@
-from nonebot import logger, on_command
-from nonebot.adapters.onebot.v11 import Bot, Message, MessageEvent, MessageSegment
+from nonebot import logger, on_command, Bot
+from nonebot.internal.adapter import Event, Message
 from nonebot.internal.matcher import Matcher
 from nonebot.internal.rule import Rule
 from nonebot.params import CommandArg
 from nonebot.rule import ToMeRule
+from nonebot_plugin_saa import Image, MessageFactory
 
 from .config import config
 from .draw import get_stat_pic
 
 
 def trigger_rule():
-    def check_su(event: MessageEvent):
+    def check_su(event: Event):
         if config.ps_only_su:
             return event.get_user_id() in config.superusers
         return True
@@ -35,7 +36,7 @@ stat_matcher = on_command(
 @stat_matcher.handle()
 async def _(
     bot: Bot,
-    event: MessageEvent,
+    event: Event,
     matcher: Matcher,
     arg: Message = CommandArg(),
 ):
@@ -53,4 +54,4 @@ async def _(
         logger.exception("获取运行状态图失败")
         await matcher.finish("获取运行状态图片失败，请检查后台输出")
 
-    await matcher.finish(MessageSegment.image(ret))
+    await MessageFactory(Image(ret)).send()

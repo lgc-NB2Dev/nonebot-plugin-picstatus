@@ -11,10 +11,14 @@ from typing import Dict, List, Optional, Tuple, Union
 import nonebot
 import psutil
 from aiohttp import ClientConnectorError, ClientSession, ClientTimeout
-from nonebot import logger
-from nonebot.adapters.onebot.v11 import Bot
+from nonebot import logger, Bot
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from psutil._common import sdiskio, sdiskusage, snetio
+
+try:
+    from nonebot.adapters.onebot.v11 import Bot as OneBotV11Bot
+except ImportError:
+    OneBotV11Bot = None
 
 from .config import TestSiteCfg, config
 from .const import DEFAULT_AVATAR_PATH, DEFAULT_BG_PATH, DEFAULT_FONT_PATH
@@ -60,44 +64,8 @@ def get_usage_color(usage: float):
     return "lightgreen"
 
 
-async def draw_header(bot: Bot):
-    # 获取Bot头像
-    try:
-        avatar = await get_qq_avatar(bot.self_id)
-        avatar = Image.open(BytesIO(avatar))
-    except:
-        logger.exception("获取Bot头像失败，使用默认头像替代")
-        avatar = await async_open_img(DEFAULT_AVATAR_PATH)
-
-    # bot状态信息
-    bot_stat = (await bot.get_status()).get("stat")
-    if bot_stat:
-        msg_rec = (
-            bot_stat.get("message_received") or bot_stat.get("MessageReceived") or "未知"
-        )
-        msg_sent = bot_stat.get("message_sent") or bot_stat.get("MessageSent") or "未知"
-    else:
-        msg_rec = msg_sent = "未知"
-
-    nick = (
-        list(config.nickname)[0]
-        if (config.ps_use_env_nick and config.nickname)
-        else (await bot.get_login_info())["nickname"]
-    )
-    bot_connected = (
-        format_timedelta(datetime.now() - t)
-        if (t := get_bot_connect_time(bot.self_id))
-        else "未知"
-    )
-    nb_run = (
-        format_timedelta(datetime.now() - t) if (t := get_nonebot_run_time()) else "未知"
-    )
-
-    # 系统启动时间
-    booted = format_timedelta(
-        datetime.now() - datetime.fromtimestamp(psutil.boot_time()),
-    )
-
+def do_draw_header(avatar: Image.Image, msg_rec: str, msg_sent: str,
+                   nick: str, bot_connected: str, nb_run: str, booted: str):
     font_30 = get_font(30)
     font_80 = get_font(80)
 
@@ -127,6 +95,61 @@ async def draw_header(bot: Bot):
     bg_draw.line((300, 150, 500, 150), GRAY_BG_COLOR, 3)
 
     return bg
+
+
+async def draw_header(bot: Bot):
+    bot_connected = (
+        format_timedelta(datetime.now() - t)
+        if (t := get_bot_connect_time(bot.self_id))
+        else "未知"
+    )
+
+    nb_run = (
+        format_timedelta(datetime.now() - t) if (t :=
+                                                 get_nonebot_run_time()) else "未知"
+    )
+
+    # 系统启动时间
+    booted = format_timedelta(
+        datetime.now() - datetime.fromtimestamp(psutil.boot_time()),
+    )
+
+    if OneBotV11Bot is not None and isinstance(bot, OneBotV11Bot):
+        # 获取Bot头像
+        try:
+            avatar = await get_qq_avatar(bot.self_id)
+            avatar = Image.open(BytesIO(avatar))
+        except:
+            logger.exception("获取Bot头像失败，使用默认头像替代")
+            avatar = await async_open_img(DEFAULT_AVATAR_PATH)
+
+        # bot状态信息
+        bot_stat = (await bot.get_status()).get("stat")
+        if bot_stat:
+            msg_rec = (
+                bot_stat.get("message_received") or bot_stat.get(
+                    "MessageReceived") or "未知"
+            )
+            msg_sent = bot_stat.get("message_sent") or bot_stat.get(
+                "MessageSent") or "未知"
+        else:
+            msg_rec = msg_sent = "未知"
+
+        nick = (
+            list(config.nickname)[0]
+            if (config.ps_use_env_nick and config.nickname)
+            else (await bot.get_login_info())["nickname"]
+        )
+    else:
+        avatar = await async_open_img(DEFAULT_AVATAR_PATH)
+        msg_rec = msg_sent = "未知"
+        nick = (
+            list(config.nickname)[0]
+            if (config.ps_use_env_nick and config.nickname)
+            else "Bot"
+        )
+
+    return do_draw_header(avatar, msg_rec, msg_sent, nick, bot_connected, nb_run, booted)
 
 
 async def draw_cpu_memory_usage():

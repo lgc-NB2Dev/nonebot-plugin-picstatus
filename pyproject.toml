@@ -9,7 +9,7 @@ dependencies = [
     "aiofiles<23.0.0,>=22.1.0",
     "nonebot2>=2.0.0b4",
     "aiohttp<4.0.0,>=3.8.3",
-    "nonebot-adapter-onebot>=2.1.0",
+    "nonebot-plugin-send-anything-anywhere>=0.2.4",
 ]
 requires-python = ">=3.8,<4.0"
 readme = "README.md"
