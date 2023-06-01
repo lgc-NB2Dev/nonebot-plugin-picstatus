@@ -76,14 +76,10 @@ async def draw_header(bot: Bot):
     if OBV11Bot and isinstance(bot, OBV11Bot):
         bot_stat = (await bot.get_status()).get("stat")
         if bot_stat:
-            msg_rec = (
-                bot_stat.get("message_received")
-                or bot_stat.get("MessageReceived")
-                or "未知"
+            msg_rec = bot_stat.get("message_received") or bot_stat.get(
+                "MessageReceived",
             )
-            msg_sent = (
-                bot_stat.get("message_sent") or bot_stat.get("MessageSent") or "未知"
-            )
+            msg_sent = bot_stat.get("message_sent") or bot_stat.get("MessageSent")
 
         if not (config.ps_use_env_nick and config.nickname):
             nick = (await bot.get_login_info())["nickname"]
