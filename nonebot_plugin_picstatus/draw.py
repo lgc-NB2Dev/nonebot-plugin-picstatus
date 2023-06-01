@@ -469,7 +469,7 @@ async def draw_net_io():
                     tested_conn[site.name] = (r.status_code, time2 * 1000)
 
             except Exception as e:
-                logger.opt(exception=e).exception(f"网页 {site.name}({site.url}) 访问失败")
+                logger.error(f"网页 {site.name}({site.url}) 访问失败: {e!r}")
                 tested_conn[site.name] = e
 
         await asyncio.gather(*[get_result(x) for x in config.ps_test_sites])
