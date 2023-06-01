@@ -146,7 +146,8 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 ### 0.4.0
 
 - 使用 [nonebot-plugin-send-anything-anywhere](https://github.com/felinae98/nonebot-plugin-send-anything-anywhere) 兼容多平台发送，并对 OneBot V11 和 Telegram 做了特殊兼容
-- aiohttp 与 aiofiles 换成了 httpx 与 anyio
+- 测试网站现在按照配置文件中的顺序排序
+- `aiohttp` 与 `aiofiles` 换成了 `httpx` 与 `anyio`
 
 ### 0.3.3
 
