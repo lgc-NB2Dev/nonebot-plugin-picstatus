@@ -1,11 +1,14 @@
+from nonebot import require
 from nonebot.plugin import PluginMetadata
 
-from . import __main__ as __main__
-from . import statistics as statistics
-from .config import Cfg, config
-from .version import __version__ as __version__
+require("nonebot_plugin_saa")
 
-usage = "指令：运行状态 | 状态"
+from . import __main__ as __main__  # noqa: E402
+from . import statistics as statistics  # noqa: E402
+from .config import Cfg, config  # noqa: E402
+from .version import __version__ as __version__  # noqa: E402
+
+usage = "指令：运行状态 / 状态 / yxzt / zt / status"
 if config.ps_need_at:
     usage += "\n注意：使用指令时需要@机器人"
 if config.ps_only_su:

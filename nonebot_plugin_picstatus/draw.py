@@ -1,41 +1,48 @@
-# pyright: reportGeneralTypeIssues=false
-
 import asyncio
 import platform
 import random
 import time
 from datetime import datetime
 from io import BytesIO
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, cast
 
+import httpx
 import nonebot
 import psutil
-from aiohttp import ClientConnectorError, ClientSession, ClientTimeout
+from httpx import AsyncClient
 from nonebot import logger
-from nonebot.adapters.onebot.v11 import Bot
+from nonebot.internal.adapter import Bot
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from psutil._common import sdiskio, sdiskusage, snetio
 
 from .config import TestSiteCfg, config
-from .const import DEFAULT_AVATAR_PATH, DEFAULT_BG_PATH, DEFAULT_FONT_PATH
-from .statistics import (
-    get_bot_connect_time,
-    get_nonebot_run_time,
-)
+from .const import DEFAULT_BG_PATH, DEFAULT_FONT_PATH
+from .statistics import bot_connect_time, nonebot_run_time, recv_num, send_num
 from .util import (
     async_open_img,
     async_request,
     format_byte_count,
     format_timedelta,
     get_anime_pic,
-    get_qq_avatar,
+    get_bot_avatar,
     get_system_name,
     match_list_regexp,
     process_text_len,
 )
 from .version import __version__
 
-GRAY_BG_COLOR = "#aaaaaaaa"
+try:
+    from nonebot.adapters.onebot.v11 import Bot as OBV11Bot
+except:
+    OBV11Bot = None
+
+try:
+    from nonebot.adapters.telegram import Bot as TGBot
+except:
+    TGBot = None
+
+
+GRAY_BG_COLOR: str = "#aaaaaaaa"
 WHITE_BG_COLOR = config.ps_bg_color
 WHITE_MASK_COLOR = config.ps_mask_color
 
@@ -61,36 +68,46 @@ def get_usage_color(usage: float):
 
 
 async def draw_header(bot: Bot):
-    # 获取Bot头像
-    try:
-        avatar = await get_qq_avatar(bot.self_id)
-        avatar = Image.open(BytesIO(avatar))
-    except:
-        logger.exception("获取Bot头像失败，使用默认头像替代")
-        avatar = await async_open_img(DEFAULT_AVATAR_PATH)
+    # 平台兼容处理
+    nick: Optional[str] = None
+    msg_rec: Optional[str] = None
+    msg_sent: Optional[str] = None
 
-    # bot状态信息
-    bot_stat = (await bot.get_status()).get("stat")
-    if bot_stat:
-        msg_rec = (
-            bot_stat.get("message_received") or bot_stat.get("MessageReceived") or "未知"
-        )
-        msg_sent = bot_stat.get("message_sent") or bot_stat.get("MessageSent") or "未知"
-    else:
-        msg_rec = msg_sent = "未知"
+    if OBV11Bot and isinstance(bot, OBV11Bot):
+        bot_stat = (await bot.get_status()).get("stat")
+        if bot_stat:
+            msg_rec = bot_stat.get("message_received") or bot_stat.get(
+                "MessageReceived",
+            )
+            msg_sent = bot_stat.get("message_sent") or bot_stat.get("MessageSent")
 
-    nick = (
-        list(config.nickname)[0]
-        if (config.ps_use_env_nick and config.nickname)
-        else (await bot.get_login_info())["nickname"]
-    )
+        if not (config.ps_use_env_nick and config.nickname):
+            nick = (await bot.get_login_info())["nickname"]
+
+    if TGBot and isinstance(bot, TGBot):  # noqa: SIM102
+        if not (config.ps_use_env_nick and config.nickname):
+            nick = (await bot.get_me()).first_name
+
+    avatar = await get_bot_avatar(bot)
+    if not nick:
+        nick = list(config.nickname)[0] if config.nickname else "Bot"
+    if msg_rec is None:
+        num = recv_num.get(bot.self_id)
+        msg_rec = "未知" if num is None else str(num)
+    if msg_sent is None:
+        num = send_num.get(bot.self_id)
+        msg_sent = "未知" if num is None else str(num)
+
+    # 通用数据
     bot_connected = (
         format_timedelta(datetime.now() - t)
-        if (t := get_bot_connect_time(bot.self_id))
+        if (t := bot_connect_time.get(bot.self_id))
         else "未知"
     )
     nb_run = (
-        format_timedelta(datetime.now() - t) if (t := get_nonebot_run_time()) else "未知"
+        format_timedelta(datetime.now() - nonebot_run_time)
+        if nonebot_run_time
+        else "未知"
     )
 
     # 系统启动时间
@@ -207,6 +224,7 @@ async def draw_cpu_memory_usage():
             freq_t = f"{cpu_freq.current:.0f}MHz / {cpu_freq.max:.0f}MHz"
     except AttributeError:
         freq_t = "主频未知"
+
     bg_draw.text(
         (200, 470),
         f"{cpu_count}核 {cpu_count_logical}线程",
@@ -346,7 +364,7 @@ async def draw_disk_usage():
     if disks:
         max_len = 990 - (50 + left_padding)  # 进度条长度
 
-        its: List[Tuple[str, Union[sdiskusage, Exception]]] = disks.items()
+        its = cast(List[Tuple[str, Union[sdiskusage, Exception]]], disks.items())
         for name, usage in its:
             fail = isinstance(usage, Exception)
 
@@ -435,26 +453,29 @@ async def draw_net_io():
 
     async def get_net_connection():
         """网络连通性"""
-        nonlocal connections
+
+        tested_conn: Dict[str, Union[Tuple[int, float], Exception]] = {}
 
         async def get_result(site: TestSiteCfg):
             try:
-                async with ClientSession(
-                    timeout=ClientTimeout(total=config.ps_test_timeout),
+                async with AsyncClient(
+                    timeout=config.ps_test_timeout,
+                    proxies=config.proxy if site.use_proxy else None,
+                    follow_redirects=True,
                 ) as c:
                     time1 = time.time()
-                    async with c.get(
-                        site.url,
-                        proxy=config.proxy if site.use_proxy else None,
-                    ) as r:
-                        time2 = time.time() - time1
-                        connections.append((site.name, (r.status, time2 * 1000)))
+                    r = await c.get(site.url)
+                    time2 = time.time() - time1
+                    tested_conn[site.name] = (r.status_code, time2 * 1000)
 
             except Exception as e:
                 logger.opt(exception=e).exception(f"网页 {site.name}({site.url}) 访问失败")
-                connections.append((site.name, e))
+                tested_conn[site.name] = e
 
         await asyncio.gather(*[get_result(x) for x in config.ps_test_sites])
+        connections.extend(
+            [(x.name, tested_conn[x.name]) for x in config.ps_test_sites],
+        )
 
     await asyncio.gather(get_net_io(), get_net_connection())
 
@@ -494,10 +515,10 @@ async def draw_net_io():
 
         for k, v in connections:
             if isinstance(v, Exception):
-                if isinstance(v, asyncio.TimeoutError):
+                if isinstance(v, httpx.ReadTimeout):
                     tip = "超时"
-                elif isinstance(v, ClientConnectorError):
-                    tip = f"[{v.os_error.errno}] {v.os_error.strerror}"
+                # elif isinstance(v, ClientConnectorError):
+                #     tip = f"[{v.os_error.errno}] {v.os_error.strerror}"
                 else:
                     tip = v.__class__.__name__
             else:
@@ -533,22 +554,23 @@ async def draw_footer(img: Image.Image):
     )
 
 
-async def get_bg(pic: Union[str, bytes, BytesIO] = None) -> Image.Image:
-    if config.ps_custom_bg and (not pic):
-        pic = random.choice(config.ps_custom_bg)
+async def get_bg(pic: Optional[Union[bytes, Image.Image]] = None) -> Image.Image:
+    if isinstance(pic, Image.Image):
+        return pic
 
-    if pic:
+    if isinstance(pic, bytes):
         try:
-            if isinstance(pic, str):
-                if pic.startswith("file:///"):
-                    return await async_open_img(pic.replace("file:///", "", 1))
+            return Image.open(BytesIO(pic))
+        except:
+            logger.exception("打开用户自定义背景图失败，弃用")
+            pic = None
 
-                pic = await async_request(pic)
-
-            if isinstance(pic, bytes):
-                pic = BytesIO(pic)
-
-            return Image.open(pic)
+    if config.ps_custom_bg and (not pic):
+        url = random.choice(config.ps_custom_bg)
+        try:
+            if url.startswith("file:///"):
+                return await async_open_img(url[8:])
+            return Image.open(await async_request(url))
         except:
             logger.exception("下载/打开自定义背景图失败，使用随机背景图")
 
@@ -560,19 +582,22 @@ async def get_bg(pic: Union[str, bytes, BytesIO] = None) -> Image.Image:
     return await async_open_img(DEFAULT_BG_PATH)
 
 
-async def get_stat_pic(bot: Bot, bg=None):
+async def get_stat_pic(bot: Bot, bg_arg: Optional[bytes] = None) -> bytes:
     img_w = 1300
     img_h = 50  # 这里是上边距，留给下面代码统计图片高度
 
     # 获取背景及各模块图片
-    ret: List[Optional[Image.Image]] = await asyncio.gather(
-        get_bg(bg),
-        draw_header(bot),
-        draw_cpu_memory_usage(),
-        draw_disk_usage(),
-        draw_net_io(),
+    ret = cast(
+        List[Optional[Image.Image]],
+        await asyncio.gather(
+            get_bg(bg_arg),
+            draw_header(bot),
+            draw_cpu_memory_usage(),
+            draw_disk_usage(),
+            draw_net_io(),
+        ),
     )
-    bg: Image.Image = ret[0]
+    bg = cast(Image.Image, ret[0])
     ret = ret[1:]
 
     # 统计图片高度
@@ -621,5 +646,5 @@ async def get_stat_pic(bot: Bot, bg=None):
     bg = bg.convert("RGB")
 
     bio = BytesIO()
-    bg.save(bio, "png")
-    return bio
+    bg.save(bio, "jpeg")
+    return bio.getvalue()
