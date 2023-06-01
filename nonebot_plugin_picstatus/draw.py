@@ -13,10 +13,12 @@ from httpx import AsyncClient
 from nonebot import logger
 from nonebot.internal.adapter import Bot
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from pil_utils import BuildImage
+from pil_utils.fonts import get_proper_font
 from psutil._common import sdiskio, sdiskusage, snetio
 
 from .config import TestSiteCfg, config
-from .const import DEFAULT_BG_PATH, DEFAULT_FONT_PATH
+from .const import DEFAULT_BG_PATH
 from .statistics import bot_connect_time, nonebot_run_time, recv_num, send_num
 from .util import (
     async_open_img,
@@ -46,16 +48,11 @@ GRAY_BG_COLOR: str = "#aaaaaaaa"
 WHITE_BG_COLOR = config.ps_bg_color
 WHITE_MASK_COLOR = config.ps_mask_color
 
+FONT_PATH = config.ps_font or str(get_proper_font("国").path.resolve())
+
 
 def get_font(size: int):
-    default = str(DEFAULT_FONT_PATH)
-    if config.ps_font:
-        try:
-            return ImageFont.truetype(config.ps_font, size)
-        except:
-            logger.exception("加载自定义字体失败，使用默认字体")
-
-    return ImageFont.truetype(default, size)
+    return ImageFont.truetype(FONT_PATH, size)
 
 
 def get_usage_color(usage: float):
@@ -116,7 +113,7 @@ async def draw_header(bot: Bot):
     )
 
     font_30 = get_font(30)
-    font_80 = get_font(80)
+    # font_80 = get_font(80)
 
     bg = Image.new("RGBA", (1200, 300), WHITE_BG_COLOR)
     bg_draw = ImageDraw.Draw(bg)
@@ -130,7 +127,15 @@ async def draw_header(bot: Bot):
     bg.paste(avatar, (25, 25), circle_mask)
 
     # 标题
-    bg_draw.text((300, 140), nick, "black", font_80, "ld")
+    # bg_draw.text((300, 140), nick, "black", font_80, "ld")
+    BuildImage(bg).draw_text(
+        (300, 25, 1175, 140),
+        nick,
+        max_fontsize=80,
+        halign="left",
+        valign="bottom",
+        fontname=FONT_PATH,
+    )
 
     # 详细信息
     bg_draw.multiline_text(
