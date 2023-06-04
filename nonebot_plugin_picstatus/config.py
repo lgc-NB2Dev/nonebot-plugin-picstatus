@@ -37,6 +37,7 @@ class Cfg(BaseModel):
     ]
     ps_test_timeout: int = 5
     ps_max_text_len: int = 18
+    ps_req_timeout: Optional[int] = 10
 
 
 config: Cfg = Cfg.parse_obj(get_driver().config.dict())

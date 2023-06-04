@@ -143,6 +143,10 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ## 📝 更新日志
 
+### 0.4.2
+
+- 添加配置项 `PS_REQ_TIMEOUT` ([#25](https://github.com/lgc-NB2Dev/nonebot-plugin-picstatus/issues/25))
+
 ### 0.4.1
 
 - 现在默认使用 `pil_utils` 自动选择系统内支持中文的字体，删除插件内置字体

@@ -59,7 +59,11 @@ async def async_request(
 
 
 async def async_request(url: str, *args, is_text=False, proxy=None, **kwargs):
-    async with AsyncClient(proxies=proxy, follow_redirects=True) as cli:
+    async with AsyncClient(
+        proxies=proxy,
+        follow_redirects=True,
+        timeout=config.ps_req_timeout,
+    ) as cli:
         res = await cli.get(url, *args, **kwargs)
         return res.text if is_text else res.content
 

@@ -18,5 +18,14 @@ __plugin_meta__ = PluginMetadata(
     name="PicStatus",
     description="以图片形式显示当前设备的运行状态",
     usage=usage,
+    type="application",
+    homepage="https://github.com/lgc-NB2Dev/nonebot-plugin-picstatus",
     config=Cfg,
+    supported_adapters=[
+        "~onebot.v11",
+        "~onebot.v12",
+        "~telegram",
+        "~kaiheila",
+        "~qqguild",
+    ],
 )
