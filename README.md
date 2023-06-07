@@ -41,17 +41,21 @@ _✨ 运行状态图片版 for NoneBot2 ✨_
 <details>
   <summary>点击展开</summary>
 
-![example](https://raw.githubusercontent.com/lgc-NB2Dev/readme/main/picstatus/example.png)
+![example](https://raw.githubusercontent.com/lgc-NB2Dev/readme/main/picstatus/example.jpg)
 
 </details>
 
 ## 💿 安装
 
+以下提到的方法 任选**其一** 即可
+
 <details open>
 <summary>[推荐] 使用 nb-cli 安装</summary>
 在 nonebot2 项目的根目录下打开命令行, 输入以下指令即可安装
 
-    nb plugin install nonebot-plugin-picstatus
+```bash
+nb plugin install nonebot-plugin-picstatus
+```
 
 </details>
 
@@ -62,43 +66,45 @@ _✨ 运行状态图片版 for NoneBot2 ✨_
 <details>
 <summary>pip</summary>
 
-    pip install nonebot-plugin-picstatus
+```bash
+pip install nonebot-plugin-picstatus
+```
 
 </details>
 <details>
 <summary>pdm</summary>
 
-    pdm add nonebot-plugin-picstatus
+```bash
+pdm add nonebot-plugin-picstatus
+```
 
 </details>
 <details>
 <summary>poetry</summary>
 
-    poetry add nonebot-plugin-picstatus
+```bash
+poetry add nonebot-plugin-picstatus
+```
 
 </details>
 <details>
 <summary>conda</summary>
 
-    conda install nonebot-plugin-picstatus
+```bash
+conda install nonebot-plugin-picstatus
+```
 
 </details>
 
-打开 nonebot2 项目的 `bot.py` 文件, 在其中写入
+打开 nonebot2 项目根目录下的 `pyproject.toml` 文件, 在 `[tool.nonebot]` 部分的 `plugins` 项里追加写入
 
-    nonebot.load_plugin('nonebot_plugin_picstatus')
-
-</details>
-
-<details>
-<summary>从 github 安装</summary>
-在 nonebot2 项目的插件目录下, 打开命令行, 输入以下命令克隆此储存库
-
-    git clone https://github.com/lgc2333/nonebot-plugin-picstatus.git
-
-打开 nonebot2 项目的 `bot.py` 文件, 在其中写入
-
-    nonebot.load_plugin('src.plugins.nonebot_plugin_picstatus')
+```toml
+[tool.nonebot]
+plugins = [
+    # ...
+    "nonebot_plugin_picstatus"
+]
+```
 
 </details>
 
@@ -142,6 +148,13 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
   </details>
 
 ## 📝 更新日志
+
+### 0.5.0
+
+- 先获取状态信息再进行画图，可以获取到更精准的状态信息
+- 添加进程占用信息的展示
+- 测试网站结果状态码后面会带上 `reason`，如 `200 OK` / `404 Not Found`
+- 添加了一些配置项（`PS_SORT_PARTS`, `PS_SORT_PARTS_REVERSE`, `PS_SORT_DISK_IOS`, `PS_SORT_NETS`, `PS_SORT_SITES`, `PS_PROC_LEN`, `PS_IGNORE_PROCS`, `PS_PROC_SORT_BY`, `PS_PROC_CPU_MAX_100P`, `PS_REPLY_TARGET`, `PS_TG_MAX_FILE_SIZE`）
 
 ### 0.4.2
 

@@ -21,11 +21,12 @@ __plugin_meta__ = PluginMetadata(
     type="application",
     homepage="https://github.com/lgc-NB2Dev/nonebot-plugin-picstatus",
     config=Cfg,
-    supported_adapters=[
+    supported_adapters={
         "~onebot.v11",
         "~onebot.v12",
         "~telegram",
         "~kaiheila",
         "~qqguild",
-    ],
+    },
+    extra={"License": "MIT", "Author": "student_2333"},
 )

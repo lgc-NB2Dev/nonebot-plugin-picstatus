@@ -29,7 +29,7 @@ async def called_api(bot: Bot, exc: Optional[Exception], api: str, _, __):
         send_num[bot.self_id] = num + 1
 
 
-async def not_ob_v11_bot_rule(bot: Bot):
+async def not_ob_v11_bot_rule(bot: Bot) -> bool:
     return not (OneBotV11Bot and isinstance(bot, OneBotV11Bot))
 
 

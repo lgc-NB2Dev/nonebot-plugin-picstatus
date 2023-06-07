@@ -1,9 +1,8 @@
 import json
-import platform
 import re
 from datetime import timedelta
 from io import BytesIO
-from typing import Literal, Optional, cast, overload
+from typing import List, Literal, Optional, cast, overload
 
 import anyio
 from httpx import AsyncClient
@@ -68,7 +67,7 @@ async def async_request(url: str, *args, is_text=False, proxy=None, **kwargs):
         return res.text if is_text else res.content
 
 
-async def get_anime_pic():
+async def get_anime_pic() -> bytes:
     data = json.loads(
         await async_request("https://api.gumengya.com/Api/DmImg", is_text=True),
     )
@@ -76,7 +75,7 @@ async def get_anime_pic():
     return await async_request(data["data"]["url"])
 
 
-async def get_qq_avatar(qq):
+async def get_qq_avatar(qq) -> bytes:
     return await async_request(f"https://q2.qlogo.cn/headimg_dl?dst_uin={qq}&spec=640")
 
 
@@ -86,31 +85,7 @@ async def async_open_img(fp, *args, **kwargs) -> Image.Image:
     return Image.open(p, *args, **kwargs)
 
 
-async def get_system_name():
-    system, _, release, version, machine, _ = platform.uname()
-    system, release, version = platform.system_alias(system, release, version)
-
-    if system == "Java":
-        _, _, _, (system, release, machine) = platform.java_ver()
-
-    if system == "Darwin":
-        return f"MacOS {platform.mac_ver()[0]} {machine}"
-    if system == "Windows":
-        return f"Windows {release} {platform.win32_edition()} {machine}"
-    if system == "Linux":
-        try:
-            v = await anyio.Path("/etc/issue").read_text()
-        except:
-            logger.exception("读取 /etc/issue 文件失败")
-            v = f"未知Linux {release}"
-        else:
-            v = v.replace(r"\n", "").replace(r"\l", "").strip()
-        return f"{v} {machine}"
-
-    return f"{system} {release}"
-
-
-def format_byte_count(b: int):
+def format_byte_count(b: int) -> str:
     if (k := b / 1024) < 1:
         return f"{b}B"
     if (m := k / 1024) < 1:
@@ -120,7 +95,7 @@ def format_byte_count(b: int):
     return f"{g:.2f}G"
 
 
-def match_list_regexp(reg_list, txt):
+def match_list_regexp(reg_list: List[str], txt: str) -> Optional[re.Match]:
     for r in reg_list:
         if m := re.search(r, txt):
             return m

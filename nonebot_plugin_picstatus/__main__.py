@@ -72,12 +72,23 @@ async def extract_msg_pic(bot: Bot, event: Event) -> Optional[bytes]:
             file_id = photos[0].data["file"]
 
         elif documents := msg["document"]:
-            for doc in documents:
-                data = doc.data["document"]
-                if data["mime_type"].startswith("image/"):
-                    # if not data["file_size"] > (15 * 1024 * 1024):
+            doc = next(
+                (
+                    doc
+                    for doc in documents
+                    if doc.data["mime_type"].startswith("image/")
+                ),
+                None,
+            )
+            if doc:
+                data = doc.data
+                if data["file_size"] > (config.ps_tg_max_file_size * 1024 * 1024):
+                    logger.warning("附带图片文件过大，回退到默认行为")
+                    await MessageFactory("附带图片文件过大，将使用默认图片").send(
+                        reply=config.ps_reply_target,
+                    )
+                else:
                     file_id = data["file_id"]
-                    break
 
         if file_id:
             return await download_telegram_file(bot, file_id)
@@ -103,19 +114,19 @@ async def _(
         pic = await extract_msg_pic(bot, event)
     except:
         logger.exception("获取消息中附带图片失败，回退到默认行为")
+        await MessageFactory("获取消息中附带图片失败，将使用默认图片").send(reply=config.ps_reply_target)
 
     try:
         ret = await get_stat_pic(bot, pic)
     except:
         logger.exception("获取运行状态图失败")
-        await matcher.finish("获取运行状态图片失败，请检查后台输出")
+        await MessageFactory("获取运行状态图片失败，请检查后台输出").send(reply=config.ps_reply_target)
+        await matcher.finish()
 
     # 为什么 SAA 还不发版支持 TG
     # 哼哼啊啊啊啊啊啊啊啊啊啊啊啊
     if TGMessageEvent and isinstance(event, TGMessageEvent):
-        await matcher.send(File.photo(ret))
+        await matcher.finish(File.photo(ret))
 
-    else:
-        await MessageFactory(Image(ret)).send()
-
+    await MessageFactory(Image(ret)).send(reply=config.ps_reply_target)
     await matcher.finish()
