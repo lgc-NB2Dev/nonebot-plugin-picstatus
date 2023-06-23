@@ -1,13 +1,13 @@
 [project]
 name = "nonebot-plugin-picstatus"
-version = "0.5.0"
+version = "0.5.1"
 description = "A NoneBot2 plugin generates a picture which shows the status of current device"
 authors = [{ name = "student_2333", email = "lgc2333@126.com" }]
 dependencies = [
     "Pillow<10.0.0,>=9.2.0",
     "psutil<6.0.0,>=5.9.2",
     "nonebot2>=2.0.0",
-    "nonebot-plugin-send-anything-anywhere>=0.2.4",
+    "nonebot-plugin-send-anything-anywhere>=0.2.5",
     "anyio>=3.7.0",
     "httpx>=0.24.1",
     "pil-utils>=0.1.7",

@@ -20,7 +20,6 @@ except:
 
 try:
     from nonebot.adapters.telegram.event import MessageEvent as TGMessageEvent
-    from nonebot.adapters.telegram.message import File
 except:
     TGMessageEvent = None
 
@@ -123,10 +122,4 @@ async def _(
         await MessageFactory("获取运行状态图片失败，请检查后台输出").send(reply=config.ps_reply_target)
         await matcher.finish()
 
-    # 为什么 SAA 还不发版支持 TG
-    # 哼哼啊啊啊啊啊啊啊啊啊啊啊啊
-    if TGMessageEvent and isinstance(event, TGMessageEvent):
-        await matcher.finish(File.photo(ret))
-
-    await MessageFactory(Image(ret)).send(reply=config.ps_reply_target)
-    await matcher.finish()
+    await MessageFactory(Image(ret)).finish(reply=config.ps_reply_target)
