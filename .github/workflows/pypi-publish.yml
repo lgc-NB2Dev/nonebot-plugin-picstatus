@@ -10,9 +10,9 @@ jobs:
     name: Use PDM to Build and publish Python 🐍 distributions 📦 to PyPI
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        python-version: ['3.10']
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
 
     steps:
       - name: Checkout
@@ -20,16 +20,8 @@ jobs:
         with:
           submodules: true
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install PDM
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install pdm --user
+      - name: Setup PDM
+        uses: pdm-project/setup-pdm@v3
 
       - name: Build and Publish distribution 📦 to PyPI
-        run: >-
-          python -m pdm publish -u "__token__" -P ${{ secrets.PYPI_API_TOKEN }}
+        run: pdm publish
