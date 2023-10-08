@@ -287,7 +287,7 @@ async def draw_disk_usage(data: DiskStatus) -> Optional[Image.Image]:
                 (
                     f"{usage.used / 1024 / 1024 / 1024:.2f}G / {usage.total / 1024 / 1024 / 1024:.2f}G"
                     if not fail
-                    else str(usage)
+                    else str(usage.exception)
                 ),
                 "black",
                 font_40,
