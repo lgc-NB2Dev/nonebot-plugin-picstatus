@@ -149,6 +149,10 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ## 📝 更新日志
 
+### 0.5.2
+
+- 修正读取分区信息错误时的提示信息 \([#33](https://github.com/lgc-NB2Dev/nonebot-plugin-picstatus/issues/33)\)
+
 ### 0.5.1
 
 - 使用 SAA 向 Telegram 平台发送消息
