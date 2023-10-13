@@ -428,7 +428,7 @@ async def get_bg(pic: Optional[Union[bytes, Image.Image]] = None) -> Image.Image
     if isinstance(pic, bytes):
         try:
             return Image.open(BytesIO(pic))
-        except:
+        except Exception:
             logger.exception("打开用户自定义背景图失败，弃用")
             pic = None
 
@@ -438,12 +438,12 @@ async def get_bg(pic: Optional[Union[bytes, Image.Image]] = None) -> Image.Image
             if url.startswith("file:///"):
                 return await async_open_img(url[8:])
             return Image.open(await async_request(url))
-        except:
+        except Exception:
             logger.exception("下载/打开自定义背景图失败，使用随机背景图")
 
     try:
         return Image.open(BytesIO(await get_anime_pic()))
-    except:
+    except Exception:
         logger.exception("下载/打开随机背景图失败，使用默认背景图")
 
     return await async_open_img(DEFAULT_BG_PATH)

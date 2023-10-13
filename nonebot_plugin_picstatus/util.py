@@ -15,12 +15,12 @@ from .const import DEFAULT_AVATAR_PATH
 
 try:
     from nonebot.adapters.onebot.v11 import Bot as OBV11Bot
-except:
+except ImportError:
     OBV11Bot = None
 
 try:
     from nonebot.adapters.telegram import Bot as TGBot
-except:
+except ImportError:
     TGBot = None
 
 
@@ -142,7 +142,7 @@ async def get_bot_avatar(bot: Bot) -> Image.Image:
             avatar = await get_tg_avatar(bot)
         else:
             logger.info("暂不支持获取该平台Bot头像，使用默认头像替代")
-    except:
+    except Exception:
         logger.exception("获取Bot头像失败，使用默认头像替代")
 
     if avatar:

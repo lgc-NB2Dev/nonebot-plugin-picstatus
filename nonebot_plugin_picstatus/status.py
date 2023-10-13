@@ -1,10 +1,11 @@
 import asyncio
+import os
 import platform
 import time
 from datetime import datetime
-from typing import List, NamedTuple, Optional, Tuple, Union, cast
+from pathlib import Path
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union, cast
 
-import anyio
 import psutil
 from httpx import AsyncClient, ReadTimeout
 from nonebot import logger
@@ -18,12 +19,12 @@ from .util import format_timedelta, get_bot_avatar, match_list_regexp, process_t
 
 try:
     from nonebot.adapters.onebot.v11 import Bot as OBV11Bot
-except:
+except ImportError:
     OBV11Bot = None
 
 try:
     from nonebot.adapters.telegram import Bot as TGBot
-except:
+except ImportError:
     TGBot = None
 
 
@@ -77,7 +78,7 @@ async def get_header_data(bot: Bot) -> HeaderData:
                 nick = (await bot.get_me()).first_name
 
         if not nick:
-            nick = list(config.nickname)[0] if config.nickname else "Bot"
+            nick = next(iter(config.nickname), None) or "Bot"
         if msg_rec is None:
             num = recv_num.get(bot.self_id)
             msg_rec = "未知" if num is None else str(num)
@@ -242,9 +243,9 @@ async def get_disk_io() -> List[DiskIO]:
 
         return DiskIO(name=process_text_len(name), read=read, write=write)
 
-    io1 = psutil.disk_io_counters(True)
+    io1 = psutil.disk_io_counters(perdisk=True)
     await asyncio.sleep(1)
-    io2 = psutil.disk_io_counters(True)
+    io2 = psutil.disk_io_counters(perdisk=True)
 
     res = [calc_one(name, io1[name], io2[name]) for name in io1 if name in io2]
     res = [x for x in res if x]
@@ -289,9 +290,9 @@ async def get_network_io() -> List[NetworkIO]:
 
         return NetworkIO(name=process_text_len(name), sent=sent, recv=recv)
 
-    io1 = psutil.net_io_counters(True)
+    io1 = psutil.net_io_counters(pernic=True)
     await asyncio.sleep(1)
-    io2 = psutil.net_io_counters(True)
+    io2 = psutil.net_io_counters(pernic=True)
 
     res = [calc_one(name, io1[name], io2[name]) for name in io1 if name in io2]
     res = [x for x in res if x]
@@ -385,10 +386,10 @@ async def get_process_status() -> List[ProcessStatus]:
 
         proc.cpu_percent()
         await asyncio.sleep(1)
-        cpu = proc.cpu_percent()
-        cpu = cpu / psutil.cpu_count() if config.ps_proc_cpu_max_100p else cpu
-
-        mem: int = proc.memory_info().rss
+        with proc.oneshot():
+            cpu = proc.cpu_percent()
+            cpu = cpu / psutil.cpu_count() if config.ps_proc_cpu_max_100p else cpu
+            mem: int = proc.memory_info().rss
 
         return ProcessStatus(name=process_text_len(name), cpu=cpu, mem=mem)
 
@@ -411,6 +412,47 @@ async def get_process_status() -> List[ProcessStatus]:
     return proc_list[: config.ps_proc_len]
 
 
+def parse_env(env: str) -> Dict[str, Optional[str]]:
+    env_lines = env.strip().splitlines()
+    env_dict: Dict[str, Optional[str]] = {}
+
+    for line in env_lines:
+        if "=" not in line:
+            env_dict[line.upper()] = None
+            continue
+
+        key, value = line.split("=", 1)
+        env_dict[key.upper()] = value.strip("\"'").strip()
+
+    return env_dict
+
+
+def parse_env_file(env_file: Union[str, Path]) -> Optional[Dict[str, Optional[str]]]:
+    if not isinstance(env_file, Path):
+        env_file = Path(env_file)
+    if not env_file.exists():
+        return None
+    content = env_file.read_text(encoding="u8")
+    return parse_env(content)
+
+
+# Thanks to https://github.com/nonedesktop/nonebot-plugin-guestool/blob/main/nonebot_plugin_guestool/info.py
+def get_linux_name_version() -> Optional[Tuple[str, str]]:
+    env = parse_env_file("/etc/os-release")
+    if env and (name := env.get("NAME")) and (version_id := env.get("VERSION_ID")):
+        return name, version_id
+
+    env = parse_env_file("/etc/lsb-release")
+    if (
+        env
+        and (name := env.get("DISTRIB_ID"))
+        and (version_id := env.get("DISTRIB_RELEASE"))
+    ):
+        return name, version_id
+
+    return None
+
+
 async def get_system_name():
     system, _, release, version, machine, _ = platform.uname()
     system, release, version = platform.system_alias(system, release, version)
@@ -420,16 +462,25 @@ async def get_system_name():
 
     if system == "Darwin":
         return f"MacOS {platform.mac_ver()[0]} {machine}"
+
     if system == "Windows":
         return f"Windows {release} {platform.win32_edition()} {machine}"
+
     if system == "Linux":
-        try:
-            v = await anyio.Path("/etc/issue").read_text()
-        except:
-            logger.exception("读取 /etc/issue 文件失败")
-            v = f"未知Linux {release}"
+        if (pfx := os.getenv("PREFIX")) and "termux" in pfx:
+            system = f"Termux (Android) {release}"  # a strange platform
+
+        elif os.getenv("ANDROID_ROOT") == "/system":
+            system = f"Linux (Android) {release}"
+
+        elif ver := get_linux_name_version():
+            name, version_id = ver
+            version = release if version_id.lower() == "rolling" else version_id
+            system = f"{name} {version}"
+
         else:
-            v = v.replace(r"\n", "").replace(r"\l", "").strip()
-        return f"{v} {machine}"
+            system = f"未知 Linux {release}"
+
+        return f"{system} {machine}"
 
     return f"{system} {release}"

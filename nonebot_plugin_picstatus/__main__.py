@@ -6,8 +6,7 @@ from nonebot.internal.matcher import Matcher
 from nonebot.internal.rule import Rule
 from nonebot.params import CommandArg
 from nonebot.rule import ToMeRule
-from nonebot_plugin_saa import Image, MessageFactory
-from nonebot_plugin_saa.utils.platform_send_target import extract_target
+from nonebot_plugin_saa import Image, MessageFactory, extract_target
 
 from .config import config
 from .draw import get_stat_pic
@@ -15,12 +14,12 @@ from .util import async_request, download_telegram_file
 
 try:
     from nonebot.adapters.onebot.v11 import MessageEvent as OBV11MessageEvent
-except:
+except ImportError:
     OBV11MessageEvent = None
 
 try:
     from nonebot.adapters.telegram.event import MessageEvent as TGMessageEvent
-except:
+except ImportError:
     TGMessageEvent = None
 
 
@@ -111,13 +110,13 @@ async def _(
     pic = None
     try:
         pic = await extract_msg_pic(bot, event)
-    except:
+    except Exception:
         logger.exception("获取消息中附带图片失败，回退到默认行为")
         await MessageFactory("获取消息中附带图片失败，将使用默认图片").send(reply=config.ps_reply_target)
 
     try:
         ret = await get_stat_pic(bot, pic)
-    except:
+    except Exception:
         logger.exception("获取运行状态图失败")
         await MessageFactory("获取运行状态图片失败，请检查后台输出").send(reply=config.ps_reply_target)
         await matcher.finish()
