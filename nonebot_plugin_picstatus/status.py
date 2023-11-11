@@ -63,7 +63,10 @@ async def get_header_data(bot: Bot) -> HeaderData:
         msg_sent: Optional[str] = None
 
         if OBV11Bot and isinstance(bot, OBV11Bot):
-            bot_stat = (await bot.get_status()).get("stat")
+            try:
+                bot_stat = (await bot.get_status()).get("stat")
+            except AttributeError:
+                bot_stat = None
             if bot_stat:
                 msg_rec = bot_stat.get("message_received") or bot_stat.get(
                     "MessageReceived",
