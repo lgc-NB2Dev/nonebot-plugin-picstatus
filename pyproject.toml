@@ -1,6 +1,6 @@
 [project]
 name = "nonebot-plugin-picstatus"
-version = "0.5.3"
+version = "0.5.4"
 description = "A NoneBot2 plugin generates a picture which shows the status of current device"
 authors = [{ name = "student_2333", email = "lgc2333@126.com" }]
 dependencies = [
