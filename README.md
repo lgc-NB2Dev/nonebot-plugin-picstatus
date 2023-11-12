@@ -151,7 +151,7 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ### 0.5.4
 
-- 针对性修复 Shamrock 获取状态信息报错的问题 (#34)
+- 针对性修复 Shamrock 获取状态信息报错的问题 ([#34](https://github.com/lgc-NB2Dev/nonebot-plugin-picstatus/issues/34))
 
 ### 0.5.3
 
