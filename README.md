@@ -152,6 +152,7 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 ### 0.5.5
 
 - 一些不影响使用的小更改
+- 添加配置项 `PS_DEFAULT_AVATAR`、`PS_DEFAULT_BG`、`PS_COMMAND`
 
 ### 0.5.4
 

@@ -2,7 +2,6 @@ from typing import Optional
 
 from nonebot import logger, on_command
 from nonebot.adapters import Bot, Event, Message
-from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
 from nonebot.rule import Rule, to_me
@@ -86,7 +85,7 @@ stat_matcher = on_command(
 
 
 @stat_matcher.handle()
-async def _(bot: Bot, event: Event, matcher: Matcher):
+async def _(bot: Bot, event: Event):
     try:
         extract_target(event)
     except RuntimeError:
@@ -104,7 +103,6 @@ async def _(bot: Bot, event: Event, matcher: Matcher):
         ret = await get_stat_pic(bot, pic)
     except Exception:
         logger.exception("获取运行状态图失败")
-        await MessageFactory("获取运行状态图片失败，请检查后台输出").send(reply=config.ps_reply_target)
-        await matcher.finish()
+        await MessageFactory("获取运行状态图片失败，请检查后台输出").finish(reply=config.ps_reply_target)
 
     await MessageFactory(Image(ret)).finish(reply=config.ps_reply_target)

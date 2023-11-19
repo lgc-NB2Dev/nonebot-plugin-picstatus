@@ -4,7 +4,9 @@ from typing import List, Literal, Optional, Set, Tuple
 from nonebot import get_driver
 from pydantic import BaseModel
 
-from .const import DEFAULT_AVATAR_PATH, DEFAULT_BG_PATH
+RES_PATH = Path(__file__).parent / "res"
+DEFAULT_BG_PATH = RES_PATH / "default_bg.webp"
+DEFAULT_AVATAR_PATH = RES_PATH / "default_avatar.webp"
 
 
 class TestSiteCfg(BaseModel):
@@ -30,7 +32,7 @@ class Cfg(BaseModel):
     ps_ignore_disk_ios: List[str] = []
     ps_ignore_no_io_disk: bool = False
     ps_sort_disk_ios: bool = True
-    ps_ignore_nets: List[str] = ["^lo$", "^Loopback"]
+    ps_ignore_nets: List[str] = [r"^lo(op)?\d*$", "^Loopback"]
     ps_ignore_0b_net: bool = False
     ps_sort_nets: bool = True
     ps_test_sites: List[TestSiteCfg] = [

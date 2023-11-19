@@ -478,12 +478,11 @@ async def get_stat_pic(bot: Bot, bg_arg: Optional[bytes] = None) -> bytes:
     )
 
     bg = ret[0]
-    ret = ret[1:]
+    ret = [x for x in ret[1:] if x]
 
     # 统计图片高度
     for p in ret:
-        if p:
-            img_h += p.size[1] + 50
+        img_h += p.size[1] + 50
 
     # 居中裁剪背景
     bg = bg.convert("RGBA")
