@@ -2,7 +2,8 @@ import json
 import re
 from datetime import timedelta
 from io import BytesIO
-from typing import List, Literal, Optional, cast, overload
+from pathlib import Path
+from typing import List, Literal, Optional, Union, cast, overload
 
 import anyio
 from httpx import AsyncClient
@@ -11,7 +12,6 @@ from nonebot.adapters import Bot
 from PIL import Image
 
 from .config import config
-from .const import DEFAULT_AVATAR_PATH
 
 try:
     from nonebot.adapters.onebot.v11 import Bot as OBV11Bot
@@ -27,11 +27,11 @@ except ImportError:
 def format_timedelta(t: timedelta):
     mm, ss = divmod(t.seconds, 60)
     hh, mm = divmod(mm, 60)
-    s = "%d:%02d:%02d" % (hh, mm, ss)
+    s = f"{hh}:{mm:02d}:{ss:02d}"
     if t.days:
-        s = ("%d天 " % t.days) + s
+        s = f"{t.days}天 {s}"
     # if t.microseconds:
-    #     s += " %.3f 毫秒" % (t.microseconds / 1000)
+    #     s += f" {t.microseconds / 1000:.3f}毫秒"
     return s
 
 
@@ -75,39 +75,37 @@ async def get_anime_pic() -> bytes:
     return await async_request(data["data"]["url"])
 
 
-async def get_qq_avatar(qq) -> bytes:
-    return await async_request(f"https://q2.qlogo.cn/headimg_dl?dst_uin={qq}&spec=640")
-
-
-async def async_open_img(fp, *args, **kwargs) -> Image.Image:
-    async with (await anyio.open_file(fp, "rb")) as f:
-        p = BytesIO(await f.read())
+async def async_open_img(
+    fp: Union[str, Path, anyio.Path],
+    *args,
+    **kwargs,
+) -> Image.Image:
+    p = BytesIO(await anyio.Path(fp).read_bytes())
     return Image.open(p, *args, **kwargs)
 
 
 def format_byte_count(b: int) -> str:
-    if (k := b / 1024) < 1:
-        return f"{b}B"
-    if (m := k / 1024) < 1:
-        return f"{k:.2f}K"
-    if (g := m / 1024) < 1:
-        return f"{m:.2f}M"
-    return f"{g:.2f}G"
+    units = ["B", "K", "M", "G", "T", "P", "E", "Z", "Y"]
+    multiplier = 1024
+
+    value = b
+    for unit in units:
+        if value < multiplier:
+            return f"{value:.2f}{unit}"
+        value /= multiplier
+
+    return f"{value:.2f}{units[-1]}"
 
 
 def match_list_regexp(reg_list: List[str], txt: str) -> Optional[re.Match]:
-    for r in reg_list:
-        if m := re.search(r, txt):
-            return m
-    return None
+    return next((match for r in reg_list if (match := re.search(r, txt))), None)
 
 
 def process_text_len(text: str) -> str:
     real_max_len = config.ps_max_text_len - 3
     if len(text) > real_max_len:
         text = f"{text[:real_max_len]}..."
-
-    return text  # noqa: RET504
+    return text
 
 
 async def download_telegram_file(bot: Bot, file_id: str) -> bytes:
@@ -121,6 +119,10 @@ async def download_telegram_file(bot: Bot, file_id: str) -> bytes:
 
     url = f"{bot.bot_config.api_server}file/bot{bot.bot_config.token}/{file_path}"
     return await async_request(url, proxy=config.proxy)
+
+
+async def get_qq_avatar(qq) -> bytes:
+    return await async_request(f"https://q2.qlogo.cn/headimg_dl?dst_uin={qq}&spec=640")
 
 
 async def get_tg_avatar(bot: Bot) -> bytes:
@@ -148,4 +150,4 @@ async def get_bot_avatar(bot: Bot) -> Image.Image:
     if avatar:
         return Image.open(BytesIO(avatar))
 
-    return await async_open_img(DEFAULT_AVATAR_PATH)
+    return await async_open_img(config.ps_default_avatar)

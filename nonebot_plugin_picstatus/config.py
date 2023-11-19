@@ -1,7 +1,10 @@
+from pathlib import Path
 from typing import List, Literal, Optional, Set, Tuple
 
 from nonebot import get_driver
 from pydantic import BaseModel
+
+from .const import DEFAULT_AVATAR_PATH, DEFAULT_BG_PATH
 
 
 class TestSiteCfg(BaseModel):
@@ -49,6 +52,8 @@ class Cfg(BaseModel):
     ps_blur_radius: int = 4
     ps_footer_size: int = 22
     ps_max_text_len: int = 18
+    ps_default_avatar: Path = DEFAULT_AVATAR_PATH
+    ps_default_bg: Path = DEFAULT_BG_PATH
 
     ps_command: Tuple[str, ...] = ("运行状态", "状态", "zt", "yxzt", "status")
     ps_only_su: bool = False

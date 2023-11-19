@@ -13,7 +13,6 @@ from pil_utils import BuildImage
 from pil_utils.fonts import get_proper_font
 
 from .config import config
-from .const import DEFAULT_BG_PATH
 from .status import (
     CpuMemoryStat,
     DiskStatus,
@@ -446,7 +445,7 @@ async def get_bg(pic: Optional[Union[bytes, Image.Image]] = None) -> Image.Image
     except Exception:
         logger.exception("下载/打开随机背景图失败，使用默认背景图")
 
-    return await async_open_img(DEFAULT_BG_PATH)
+    return await async_open_img(config.ps_default_bg)
 
 
 async def get_stat_pic(bot: Bot, bg_arg: Optional[bytes] = None) -> bytes:
