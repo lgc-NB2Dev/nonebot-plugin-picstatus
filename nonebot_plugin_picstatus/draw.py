@@ -7,7 +7,7 @@ from typing import List, Optional, Union
 
 import nonebot
 from nonebot import logger
-from nonebot.internal.adapter import Bot
+from nonebot.adapters import Bot
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from pil_utils import BuildImage
 from pil_utils.fonts import get_proper_font

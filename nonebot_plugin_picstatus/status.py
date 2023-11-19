@@ -9,7 +9,7 @@ from typing import Dict, List, NamedTuple, Optional, Tuple, Union, cast
 import psutil
 from httpx import AsyncClient, ReadTimeout
 from nonebot import logger
-from nonebot.internal.adapter import Bot
+from nonebot.adapters import Bot
 from PIL import Image
 from psutil._common import sdiskio, sdiskpart, snetio
 
@@ -67,6 +67,7 @@ async def get_header_data(bot: Bot) -> HeaderData:
                 bot_stat = (await bot.get_status()).get("stat")
             except AttributeError:
                 bot_stat = None
+
             if bot_stat:
                 msg_rec = bot_stat.get("message_received") or bot_stat.get(
                     "MessageReceived",

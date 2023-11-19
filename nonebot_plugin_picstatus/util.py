@@ -7,7 +7,7 @@ from typing import List, Literal, Optional, cast, overload
 import anyio
 from httpx import AsyncClient
 from nonebot import logger
-from nonebot.internal.adapter import Bot
+from nonebot.adapters import Bot
 from PIL import Image
 
 from .config import config

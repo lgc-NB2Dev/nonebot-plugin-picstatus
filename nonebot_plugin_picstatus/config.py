@@ -50,6 +50,7 @@ class Cfg(BaseModel):
     ps_footer_size: int = 22
     ps_max_text_len: int = 18
 
+    ps_command: Tuple[str, ...] = ("运行状态", "状态", "zt", "yxzt", "status")
     ps_only_su: bool = False
     ps_need_at: bool = False
     ps_reply_target: bool = True
