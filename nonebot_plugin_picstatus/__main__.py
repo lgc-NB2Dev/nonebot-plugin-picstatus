@@ -75,7 +75,7 @@ async def extract_msg_pic(bot: Bot, event: Event) -> Optional[bytes]:
     return None
 
 
-_cmd, _alias = config.ps_command
+_cmd, *_alias = config.ps_command
 stat_matcher = on_command(
     _cmd,
     aliases=set(_alias),
