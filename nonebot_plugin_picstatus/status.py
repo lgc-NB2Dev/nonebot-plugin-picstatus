@@ -57,6 +57,8 @@ class CpuFreq(NamedTuple):
 
 
 async def get_header_data(bot: Bot) -> HeaderData:
+    bot_id = get_bot_id(bot)
+
     async def get_bot_status() -> Tuple[str, str, str]:
         nick: Optional[str] = None
         msg_rec: Optional[str] = None
@@ -75,7 +77,7 @@ async def get_header_data(bot: Bot) -> HeaderData:
                 msg_sent = bot_stat.get("message_sent") or bot_stat.get("MessageSent")
 
             if not (config.ps_use_env_nick and config.nickname):
-                nick = (await bot.get_login_info())["nickname"]
+                nick = (await bot.get_login_info()).get("nickname")
 
         if TGBot and isinstance(bot, TGBot):  # noqa: SIM102
             if not (config.ps_use_env_nick and config.nickname):
@@ -84,10 +86,10 @@ async def get_header_data(bot: Bot) -> HeaderData:
         if not nick:
             nick = next(iter(config.nickname), None) or "Bot"
         if msg_rec is None:
-            num = recv_num.get(bot.self_id)
+            num = recv_num.get(bot_id)
             msg_rec = "未知" if num is None else str(num)
         if msg_sent is None:
-            num = send_num.get(bot.self_id)
+            num = send_num.get(bot_id)
             msg_sent = "未知" if num is None else str(num)
 
         return nick, msg_rec, msg_sent
@@ -100,7 +102,7 @@ async def get_header_data(bot: Bot) -> HeaderData:
     now_time = datetime.now()
     bot_connected = (
         format_timedelta(now_time - t)
-        if (t := bot_connect_time.get(get_bot_id(bot)))
+        if (t := bot_connect_time.get(bot_id))
         else "未知"
     )
     nb_run = format_timedelta(now_time - nonebot_run_time) if nonebot_run_time else "未知"
