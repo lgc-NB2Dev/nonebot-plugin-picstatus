@@ -14,7 +14,7 @@ from PIL import Image
 from psutil._common import sdiskio, sdiskpart, snetio
 
 from .config import TestSiteCfg, config
-from .statistics import bot_connect_time, nonebot_run_time, recv_num, send_num
+from .statistics import bot_connect_time, get_bot_id, nonebot_run_time, recv_num, send_num
 from .util import format_timedelta, get_bot_avatar, match_list_regexp, process_text_len
 
 try:
@@ -100,7 +100,7 @@ async def get_header_data(bot: Bot) -> HeaderData:
     now_time = datetime.now()
     bot_connected = (
         format_timedelta(now_time - t)
-        if (t := bot_connect_time.get(bot.self_id))
+        if (t := bot_connect_time.get(get_bot_id(bot)))
         else "未知"
     )
     nb_run = format_timedelta(now_time - nonebot_run_time) if nonebot_run_time else "未知"
