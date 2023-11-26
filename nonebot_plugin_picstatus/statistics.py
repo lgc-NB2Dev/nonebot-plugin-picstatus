@@ -36,6 +36,8 @@ async def called_api(bot: Bot, exc: Optional[Exception], api: str, _, __):
 async def _(bot: Bot):
     bot_id = get_bot_id(bot)
     bot_connect_time[bot_id] = datetime.now()
+    recv_num[bot_id] = 0
+    send_num[bot_id] = 0
     bot.on_called_api(called_api)
 
 
