@@ -1,6 +1,6 @@
 [project]
 name = "nonebot-plugin-picstatus"
-version = "0.5.6"
+dynamic = ["version"]
 description = "A NoneBot2 plugin generates a picture which shows the status of current device"
 authors = [{ name = "student_2333", email = "lgc2333@126.com" }]
 dependencies = [
@@ -20,8 +20,10 @@ license = { text = "MIT" }
 homepage = "https://github.com/lgc-NB2Dev/nonebot-plugin-picstatus"
 
 [tool.pdm]
-[tool.pdm.dev-dependencies]
-dev = []
+
+[tool.pdm.version]
+source = "file"
+path = "nonebot_plugin_picstatus/version.py"
 
 [tool.pdm.build]
 includes = []
