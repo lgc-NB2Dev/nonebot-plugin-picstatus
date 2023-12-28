@@ -316,11 +316,12 @@ span.label {
 
 .list-grid.disk-io,
 .list-grid.network-io,
-.list-grid.network-connection-test {
+.list-grid.network-connection-test,
+.list-grid.process-usage {
   grid-template-columns: minmax(0, 100%) auto auto auto;
 }
 
-.list-grid .error {
+.list-grid.network-connection-test .error {
   grid-column-end: span 3;
   text-align: right;
 }
