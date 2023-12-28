@@ -32,6 +32,7 @@ bot_avatar_cache: Dict[str, bytes] = {}
 @dataclass
 class BotStatus:
     self_id: str
+    adapter: str
     nick: str
     bot_connected: str
     msg_rec: str
@@ -81,6 +82,7 @@ async def get_bot_status(bot: BaseBot, now_time: datetime) -> BotStatus:
 
     return BotStatus(
         self_id=bot.self_id,
+        adapter=bot.adapter.get_name(),
         nick=nick,
         bot_connected=bot_connected,
         msg_rec=msg_rec,
