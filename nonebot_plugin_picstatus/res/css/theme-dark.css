@@ -1,0 +1,22 @@
+* {
+  --primary-text-color: #d0d6e2;
+  --secondary-text-color: #abb2bf;
+
+  --background-mask-color: #282c3455;
+  --card-background-color: #282c3488;
+  --default-box-shadow: 2px 2px 6px #abb2bf66;
+
+  --label-default-bg-color: #282c34aa;
+  --label-red-bg-color: #e06c75aa;
+  --label-orange-bg-color: #d19a66aa;
+  --label-yellow-bg-color: #e5c07baa;
+  --label-green-bg-color: #98c379aa;
+  --label-cyan-bg-color: #56b6c2aa;
+  --label-blue-bg-color: #61afefaa;
+  --label-purple-bg-color: #c678ddaa;
+  --label-gray-bg-color: #737c8caa;
+  --label-black-bg-color: #d0d6e2aa;
+  --label-black-text-color: #282c34;
+
+  --segment-color: #5c6370;
+}

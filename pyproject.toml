@@ -5,12 +5,15 @@ description = "A NoneBot2 plugin generates a picture which shows the status of c
 authors = [{ name = "student_2333", email = "lgc2333@126.com" }]
 dependencies = [
     "nonebot2>=2.1.2",
-    "nonebot-plugin-send-anything-anywhere>=0.4.0",
-    "Pillow>=9.2.0,<10",
+    "nonebot-plugin-alconna>=0.34.1",
+    "nonebot-plugin-userinfo>=0.1.3",
+    "nonebot-plugin-htmlrender>=0.2.3",
     "psutil>=5.9.2",
+    "py-cpuinfo>=9.0.0",
     "anyio>=3.7.0",
-    "httpx>=0.24.1,<0.25",
-    "pil-utils>=0.1.7",
+    "httpx>=0.24.1",
+    "jinja2>=3.1.2",
+    "yarl>=1.9.4",
 ]
 requires-python = ">=3.8,<4.0"
 readme = "README.md"
@@ -23,7 +26,7 @@ homepage = "https://github.com/lgc-NB2Dev/nonebot-plugin-picstatus"
 
 [tool.pdm.version]
 source = "file"
-path = "nonebot_plugin_picstatus/version.py"
+path = "nonebot_plugin_picstatus/__init__.py"
 
 [tool.pdm.build]
 includes = []

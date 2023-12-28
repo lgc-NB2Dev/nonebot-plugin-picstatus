@@ -1,0 +1,16 @@
+<div class="card cpu-mem-usage donut-chart-line">
+  {% for it in data %}
+  <div class="donut-chart">
+    <div class="chart-wrapper">
+      <svg class="chart" style="--percent: {{ it.percent / 100 }}">
+        <circle class="empty" cx="50%" cy="50%" r="67.5px" />
+        <circle class="slice {{ it.percent | percent_to_color }}" cx="50%" cy="50%" r="67.5px" />
+      </svg>
+      <div class="shadow"></div>
+      <div class="label">{{ '{0:.0f}%'.format(it.percent) }}</div>
+    </div>
+    <div class="title">{{ it.title }}</div>
+    <div class="desc">{{ it.caption | br }}</div>
+  </div>
+  {% endfor %}
+</div>

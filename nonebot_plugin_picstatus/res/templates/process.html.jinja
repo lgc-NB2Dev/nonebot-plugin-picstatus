@@ -1,0 +1,10 @@
+<div class="card process-info splitter">
+  <div class="list-grid process-usage">
+    {% for it in data.io %}
+    <div>{{ it.name }}</div>
+    <div>CPU {{ '{0:.1f}%'.format(it.cpu) }}</div>
+    <div>|</div>
+    <div>MEM {{ it.mem | auto_convert_unit }}</div>
+    {% endfor %}
+  </div>
+</div>
