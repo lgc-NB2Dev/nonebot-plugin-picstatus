@@ -2,6 +2,8 @@ import re
 from datetime import timedelta
 from typing import List, Optional
 
+import fleep
+
 
 def format_timedelta(t: timedelta):
     mm, ss = divmod(t.seconds, 60)
@@ -35,3 +37,8 @@ def percent_to_color(percent: float) -> str:
     if percent < 90:
         return "orange"
     return "red"
+
+
+def guess_mime_from_bytes(data: bytes) -> Optional[str]:
+    info = fleep.get(data[:128])
+    return info.mime[0] if info.mime else None

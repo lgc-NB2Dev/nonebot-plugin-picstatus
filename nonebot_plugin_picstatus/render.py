@@ -15,11 +15,10 @@ from nonebot_plugin_htmlrender import get_new_page
 from playwright.async_api import Page, Request, Route
 from yarl import URL
 
-from nonebot_plugin_picstatus.util import auto_convert_unit, percent_to_color
-
 from .bg_provider import get_bg
 from .components import ComponentType, components
 from .config import TEMPLATE_PATH, config
+from .util import auto_convert_unit, guess_mime_from_bytes, percent_to_color
 
 PatternType = Union[re.Pattern, str]
 RouterType = Callable[[Route, Request], Any]
@@ -158,7 +157,8 @@ async def _(route: Route, _):
 
 @router(f"{ROUTE_URL}/api/background")
 async def _(route: Route, _):
-    await route.fulfill(body=await get_bg())
+    data = await get_bg()
+    await route.fulfill(content_type=guess_mime_from_bytes(data), body=data)
 
 
 router(f"{ROUTE_URL}/api/local_file*")(
