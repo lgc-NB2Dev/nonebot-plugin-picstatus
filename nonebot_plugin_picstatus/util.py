@@ -16,14 +16,20 @@ def format_timedelta(t: timedelta):
     return s
 
 
-def auto_convert_unit(value: float, round_n: int = 2, suffix: str = "") -> str:
-    units = ["B", "K", "M", "G", "T", "P"]
+def auto_convert_unit(
+    value: float,
+    round_n: int = 2,
+    suffix: str = "",
+    multiplier: int = 1024,
+    unit_index: int = 0,
+) -> str:
+    units = ["B", "K", "M", "G", "T", "P"][unit_index:]
     unit = None
     for x in units:
         if value < 1000:
             unit = x
             break
-        value /= 1024
+        value /= multiplier
     return f"{value:.{round_n}f}{unit or units[-1]}{suffix}"
 
 

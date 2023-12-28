@@ -73,13 +73,13 @@ cpu_brand = get_cpu_brand()
 
 
 def format_freq_txt(freq: CpuFreq) -> str:
-    cu = partial(auto_convert_unit, suffix="Hz")
+    cu = partial(auto_convert_unit, suffix="Hz", multiplier=1000, unit_index=2)
     if not freq.current:
         return "主频未知"
     if not freq.max:
-        return f"当前 {cu(freq.current)}"
+        return f"当前{cu(freq.current)}"
     if freq.max == freq.current:
-        return f"最大 {cu(freq.max)}"
+        return f"最大{cu(freq.max)}"
     return f"{cu(freq.current)} / {cu(freq.max)}"
 
 
