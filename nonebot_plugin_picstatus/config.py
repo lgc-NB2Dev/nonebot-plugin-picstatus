@@ -49,8 +49,9 @@ class Cfg(BaseModel):
     ps_additional_css: List[str] = []
     ps_additional_script: List[str] = []
     ps_bg_provider: str = "gm"
+    ps_bg_lolicon_r18_type: Literal[0, 1, 2] = 0
+    ps_bg_local_path: Path = DEFAULT_BG_PATH
     ps_default_avatar: Path = DEFAULT_AVATAR_PATH
-    ps_bg_path: Path = DEFAULT_BG_PATH
     # endregion
 
     # region components
@@ -71,7 +72,7 @@ class Cfg(BaseModel):
     ps_sort_disk_ios: bool = True
     # endregion
 
-    # region net
+    # region network
     # io
     ps_ignore_nets: List[str] = [r"^lo(op)?\d*$", "^Loopback"]
     ps_ignore_0b_net: bool = False

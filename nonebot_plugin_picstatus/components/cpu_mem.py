@@ -48,7 +48,7 @@ class CpuMemoryStat:
 
 @dataclass
 class DonutData:
-    percent: float
+    percent: Optional[float]
     title: str
     caption: str
 
@@ -77,9 +77,9 @@ def format_freq_txt(freq: CpuFreq) -> str:
     if not freq.current:
         return "主频未知"
     if not freq.max:
-        return f"当前{cu(freq.current)}"
+        return cu(freq.current)
     if freq.max == freq.current:
-        return f"最大{cu(freq.max)}"
+        return cu(freq.max)
     return f"{cu(freq.current)} / {cu(freq.max)}"
 
 
@@ -135,9 +135,13 @@ def to_donut_data(data: CpuMemoryStat) -> List[DonutData]:
             caption=f"{auto_convert_unit(data.ram_stat.used)} / {auto_convert_unit(data.ram_stat.total)}",
         ),
         DonutData(
-            percent=data.swap_stat.percent,
+            percent=data.swap_stat.percent if data.swap_stat.total > 0 else None,
             title="SWAP",
-            caption=f"{auto_convert_unit(data.swap_stat.used)} / {auto_convert_unit(data.swap_stat.total)}",
+            caption=(
+                f"{auto_convert_unit(data.swap_stat.used)} / {auto_convert_unit(data.swap_stat.total)}"
+                if data.swap_stat.total > 0
+                else "??.??B / ??.??B"
+            ),
         ),
     ]
 

@@ -60,7 +60,11 @@ async def lolicon():
     ) as cli:
         resp = await cli.get(
             "https://api.lolicon.app/setu/v2",
-            params={"proxy": "false", "excludeAI": "true"},
+            params={
+                "r18": config.ps_bg_lolicon_r18_type,
+                "proxy": "false",
+                "excludeAI": "true",
+            },
         )
         url = resp.raise_for_status().json()["data"][0]["urls"]["original"]
         resp = await cli.get(
@@ -80,15 +84,17 @@ async def lolicon():
 
 @bg_provider
 async def local():
-    if not config.ps_bg_path.exists():
+    if not config.ps_bg_local_path.exists():
         logger.warning("Custom background path does not exist, fallback to default")
         return DEFAULT_BG_PATH.read_bytes()
 
-    if config.ps_bg_path.is_file():
-        return config.ps_bg_path.read_bytes()
+    if config.ps_bg_local_path.is_file():
+        return config.ps_bg_local_path.read_bytes()
 
     files = [
-        x async for x in anyio.Path(config.ps_bg_path).glob("*") if await x.is_file()
+        x
+        async for x in anyio.Path(config.ps_bg_local_path).glob("*")
+        if await x.is_file()
     ]
     if not files:
         logger.warning("Custom background dir has no file in it, fallback to default")

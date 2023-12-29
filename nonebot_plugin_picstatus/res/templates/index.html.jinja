@@ -5,21 +5,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="/css/index.css" />
-  {% for css in additional_css -%}
+  {% for css in additional_css %}
   <link rel="stylesheet" href="{{ css }}" />
-  {%- endfor %}
+  {% endfor %}
 </head>
 
 <body>
   <div class="main-background">
     <div class="main-background-mask">
-      <div class="main">{{ main }}</div>
+      <div class="main">
+        {{ main }}
+      </div>
     </div>
   </div>
 </body>
 
-{% for script in additional_script -%}
+{% for script in additional_script %}
 <script src="{{ script }}"></script>
-{%- endfor %}
+{% endfor %}
 
 </html>

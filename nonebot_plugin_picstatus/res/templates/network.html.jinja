@@ -2,9 +2,11 @@
   <div class="list-grid network-io">
     {% for it in data.io %}
     <div>{{ it.name }}</div>
-    <div>↑ {{ it.sent | auto_convert_unit(suffix='/s') }}</div>
+    <div>↑</div>
+    <div class="align-right">{{ it.sent | auto_convert_unit(suffix='/s') }}</div>
     <div>|</div>
-    <div>↓ {{ it.recv | auto_convert_unit(suffix='/s') }}</div>
+    <div>↓</div>
+    <div class="align-right">{{ it.recv | auto_convert_unit(suffix='/s') }}</div>
     {% endfor %}
   </div>
   <div class="list-grid network-connection-test">

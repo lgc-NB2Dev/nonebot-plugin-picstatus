@@ -101,7 +101,7 @@ async def render_image(main_content: str) -> bytes:
             resolve_file_url(x, "js") for x in config.ps_additional_script
         ],
     )
-    if (p := (Path.cwd() / "debug.html")).exists():
+    if (p := (Path.cwd() / "picstatus-debug.html")).exists():
         p.write_text(html, encoding="u8")
     async with get_routed_page() as page:
         await page.set_content(html, wait_until="load")

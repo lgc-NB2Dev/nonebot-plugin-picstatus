@@ -18,9 +18,11 @@
   <div class="list-grid disk-io">
     {% for it in data.io %}
     <div>{{ it.name }}</div>
-    <div>读 {{ it.read | auto_convert_unit(suffix='/s') }}</div>
+    <div>读</div>
+    <div class="align-right">{{ it.read | auto_convert_unit(suffix='/s') }}</div>
     <div>|</div>
-    <div>写 {{ it.write | auto_convert_unit(suffix='/s') }}</div>
+    <div>写</div>
+    <div class="align-right">{{ it.write | auto_convert_unit(suffix='/s') }}</div>
     {% endfor %}
   </div>
 </div>

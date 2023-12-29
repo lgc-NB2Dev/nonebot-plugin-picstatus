@@ -90,7 +90,7 @@
 body {
   font-family: var(--font-family);
   color: var(--primary-text-color);
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .main-background {
@@ -142,6 +142,7 @@ span.label {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .label-container > * {
@@ -240,6 +241,8 @@ span.label {
 .donut-chart .title {
   font-size: 32px;
   font-weight: bold;
+  text-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .donut-chart .desc {
@@ -285,7 +288,7 @@ span.label {
 }
 
 .card.header .label-container {
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .card.header .extra > * {
@@ -318,6 +321,10 @@ span.label {
 .list-grid.network-io,
 .list-grid.network-connection-test,
 .list-grid.process-usage {
+  grid-template-columns: minmax(0, 100%) auto auto auto auto auto;
+}
+
+.list-grid.network-connection-test {
   grid-template-columns: minmax(0, 100%) auto auto auto;
 }
 
@@ -329,7 +336,7 @@ span.label {
 /* Footer */
 
 .footer {
-  font-size: 12px;
+  font-size: 14px;
   text-align: center;
   color: var(--primary-text-color);
   text-shadow: 1px 1px 1px var(--label-black-text-color);

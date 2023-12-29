@@ -90,8 +90,8 @@ async def footer():
 
     txt = (
         f"NoneBot {nonebot.__version__} × PicStatus {__version__} | "
+        f"{time.strftime('%Y-%m-%d %H:%M:%S')}\n"
         f"{platform.python_implementation()} {platform.python_version()} | "
-        f"{await get_system_name()} | "
-        f"{time.strftime('%Y-%m-%d %H:%M:%S')}"
+        f"{await get_system_name()}"
     )
     return await ENVIRONMENT.get_template("footer.html.jinja").render_async(footer=txt)
