@@ -41,7 +41,8 @@ _✨ 运行状态图片版 for NoneBot2 ✨_
 <details>
   <summary>点击展开</summary>
 
-![example](https://raw.githubusercontent.com/lgc-NB2Dev/readme/main/picstatus/example.jpg)
+![example](https://raw.githubusercontent.com/lgc-NB2Dev/readme/main/picstatus/example1.jpg)
+![example](https://raw.githubusercontent.com/lgc-NB2Dev/readme/main/picstatus/example2.jpg)
 
 </details>
 
@@ -110,11 +111,11 @@ plugins = [
 
 ## ⚙️ 配置
 
-见[.env.example](https://github.com/lgc2333/nonebot-plugin-picstatus/blob/master/.env.example)
+见 [.env.example](https://github.com/lgc2333/nonebot-plugin-picstatus/blob/master/.env.example)
 
 ## 🎉 使用
 
-使用指令`运行状态`（或者`状态` / `zt` / `yxzt` / `status`）来触发插件功能  
+使用指令 `运行状态`（或者 `状态` / `zt` / `yxzt` / `status`，可修改）来触发插件功能  
 可以在消息后面跟一张图片或者回复一张图片来自定义背景图，默认为随机背景图  
 更多自定义项参见 [配置](#️-配置)
 
@@ -127,13 +128,21 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ## 💡 鸣谢
 
-### [故梦 API](https://api.gumengya.com)
+### [nonebot/plugin-alconna](https://github.com/nonebot/plugin-alconna)
 
-- 随机背景图来源
+- 强大的命令解析库，和多平台适配方案
 
-### [LoliApi](https://docs.loliapi.com/)
+### [noneplugin/nonebot-plugin-userinfo](https://github.com/noneplugin/nonebot-plugin-userinfo)
 
-- 随机背景图来源（暂时弃用）
+- 多平台用户信息获取方案
+
+### [kexue-z/nonebot-plugin-htmlrender](https://github.com/kexue-z/nonebot-plugin-htmlrender)
+
+- HTML 渲染方案
+
+### [故梦 API](https://api.gumengya.com) & [LoliApi](https://docs.loliapi.com/) & [Lolicon API](https://api.lolicon.app/)
+
+- 背景图来源
 
 ## 💰 赞助
 
@@ -148,6 +157,33 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
   </details>
 
 ## 📝 更新日志
+
+### 1.0.0
+
+重构项目：
+
+- 换用 alconna 与 userinfo 适配多平台
+- 换用 htmlrender 渲染图片
+- 删除消息附带图片作为自定义背景图功能
+- 配置项改动：
+  - 添加 `PS_COMPONENTS`
+  - 添加 `PS_ADDITIONAL_CSS`
+  - 添加 `PS_ADDITIONAL_SCRIPT`
+  - 添加 `PS_BG_PROVIDER`
+  - 添加 `PS_BG_LOLICON_R18_TYPE`
+  - 添加 `PS_BG_LOCAL_PATH`
+  - 添加 `PS_SHOW_CURRENT_BOT_ONLY`
+  - 删除 `PS_FONT`
+  - 删除 `PS_CUSTOM_BG`
+  - 删除 `PS_BG_COLOR`
+  - 删除 `PS_MASK_COLOR`
+  - 删除 `PS_BLUR_RADIUS`
+  - 删除 `PS_FOOTER_SIZE`
+  - 删除 `PS_MAX_TEXT_LEN`
+  - 删除 `PS_DEFAULT_BG`
+
+<details>
+<summary><strong>历史更新日志（点击展开）</strong></summary>
 
 ### 0.5.7
 
@@ -270,3 +306,5 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 - 可以使用`.env.*`文件中配置的`NICKNAME`作为图片中的 Bot 昵称
 - 添加必须 @Bot 才能触发指令的配置
 - 其他小优化/更改
+
+</details>

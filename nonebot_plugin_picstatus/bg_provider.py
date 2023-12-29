@@ -1,5 +1,6 @@
 import random
-from typing import Awaitable, Callable, Dict, TypeVar
+from pathlib import Path
+from typing import Awaitable, Callable, Dict, List, TypeVar
 
 import anyio
 from httpx import AsyncClient
@@ -10,8 +11,24 @@ from .config import DEFAULT_BG_PATH, config
 BGProviderType = Callable[[], Awaitable[bytes]]
 TBP = TypeVar("TBP", bound=BGProviderType)
 
-
 registered_bg_providers: Dict[str, BGProviderType] = {}
+
+
+def get_bg_files() -> List[Path]:
+    if not config.ps_bg_local_path.exists():
+        logger.warning("Custom background path does not exist, fallback to default")
+        return [DEFAULT_BG_PATH]
+    if config.ps_bg_local_path.is_file():
+        return [config.ps_bg_local_path]
+
+    files = [x for x in config.ps_bg_local_path.glob("*") if x.is_file()]
+    if not files:
+        logger.warning("Custom background dir has no file in it, fallback to default")
+        return [DEFAULT_BG_PATH]
+    return files
+
+
+BG_FILES = get_bg_files()
 
 
 def bg_provider(func: TBP) -> TBP:
@@ -84,22 +101,9 @@ async def lolicon():
 
 @bg_provider
 async def local():
-    if not config.ps_bg_local_path.exists():
-        logger.warning("Custom background path does not exist, fallback to default")
-        return DEFAULT_BG_PATH.read_bytes()
-
-    if config.ps_bg_local_path.is_file():
-        return config.ps_bg_local_path.read_bytes()
-
-    files = [
-        x
-        async for x in anyio.Path(config.ps_bg_local_path).glob("*")
-        if await x.is_file()
-    ]
-    if not files:
-        logger.warning("Custom background dir has no file in it, fallback to default")
-        return DEFAULT_BG_PATH.read_bytes()
-    return await random.choice(files).read_bytes()
+    file = random.choice(BG_FILES)
+    logger.debug(f"Choice background file `{file}`")
+    return await anyio.Path(file).read_bytes()
 
 
 @bg_provider
