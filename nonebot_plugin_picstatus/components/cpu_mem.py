@@ -11,8 +11,6 @@ from ..render import ENVIRONMENT
 from ..util import auto_convert_unit
 from . import register_component
 
-cached_cpu_brand: Optional[str] = None
-
 
 @dataclass
 class VirtualMemoryStat:
@@ -55,18 +53,18 @@ class DonutData:
 
 def get_cpu_brand() -> str:
     try:
-        cached_cpu_brand = (
+        brand = (
             cast(str, get_cpu_info().get("brand_raw", ""))
             .split("@", maxsplit=1)[0]
             .strip()
         )
-        if cached_cpu_brand.lower().endswith(("cpu", "processor")):
-            cached_cpu_brand = cached_cpu_brand.rsplit(maxsplit=1)[0].strip()
+        if brand.lower().endswith(("cpu", "processor")):
+            brand = brand.rsplit(maxsplit=1)[0].strip()
     except Exception:
         logger.exception("Error when getting CPU brand")
         return "未知型号"
     else:
-        return cached_cpu_brand
+        return brand
 
 
 cpu_brand = get_cpu_brand()
@@ -84,8 +82,6 @@ def format_freq_txt(freq: CpuFreq) -> str:
 
 
 async def get_cpu_memory_usage() -> CpuMemoryStat:
-    global cached_cpu_brand
-
     psutil.cpu_percent()
     await asyncio.sleep(0.1)
     cpu_percent = psutil.cpu_percent()
