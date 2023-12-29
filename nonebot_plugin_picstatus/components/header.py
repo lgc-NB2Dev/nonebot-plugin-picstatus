@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import psutil
 from nonebot import get_bots, logger
@@ -46,29 +46,30 @@ class HeaderData:
     booted: str
 
 
+async def get_ob11_msg_num(
+    bot: BaseBot,
+) -> Tuple[Optional[int], Optional[int]]:
+    if not (OBV11Bot and isinstance(bot, OBV11Bot)):
+        return None, None
+
+    try:
+        bot_stat = (await bot.get_status()).get("stat")
+    except Exception as e:
+        logger.warning(
+            f"Error when getting bot status: {e.__class__.__name__}: {e}",
+        )
+        return None, None
+    if not bot_stat:
+        return None, None
+
+    msg_rec = bot_stat.get("message_received") or bot_stat.get(
+        "MessageReceived",
+    )
+    msg_sent = bot_stat.get("message_sent") or bot_stat.get("MessageSent")
+    return msg_rec, msg_sent
+
+
 async def get_bot_status(bot: BaseBot, now_time: datetime) -> BotStatus:
-    msg_rec: Optional[str] = None
-    msg_sent: Optional[str] = None
-
-    if OBV11Bot and isinstance(bot, OBV11Bot):
-        try:
-            bot_stat = (await bot.get_status()).get("stat")
-        except AttributeError:
-            bot_stat = None
-
-        if bot_stat:
-            msg_rec = bot_stat.get("message_received") or bot_stat.get(
-                "MessageReceived",
-            )
-            msg_sent = bot_stat.get("message_sent") or bot_stat.get("MessageSent")
-
-    if msg_rec is None:
-        num = recv_num.get(bot.self_id)
-        msg_rec = "未知" if num is None else str(num)
-    if msg_sent is None:
-        num = send_num.get(bot.self_id)
-        msg_sent = "未知" if num is None else str(num)
-
     nick = (
         ((info := bot_info_cache[bot.self_id]).user_displayname or info.user_name)
         if (not config.ps_use_env_nick) and (bot.self_id in bot_info_cache)
@@ -79,6 +80,14 @@ async def get_bot_status(bot: BaseBot, now_time: datetime) -> BotStatus:
         if (t := bot_connect_time.get(bot.self_id))
         else "未知"
     )
+
+    msg_rec, msg_sent = await get_ob11_msg_num(bot)
+    if msg_rec is None:
+        msg_rec = recv_num.get(bot.self_id)
+    if msg_sent is None:
+        msg_sent = send_num.get(bot.self_id)
+    msg_rec = "未知" if (msg_rec is None) else str(msg_rec)
+    msg_sent = "未知" if (msg_sent is None) else str(msg_sent)
 
     return BotStatus(
         self_id=bot.self_id,

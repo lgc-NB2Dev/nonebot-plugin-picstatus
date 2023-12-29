@@ -24,6 +24,8 @@ def auto_convert_unit(
     unit_index: int = 0,
 ) -> str:
     units = ["B", "K", "M", "G", "T", "P"][unit_index:]
+    if not units:
+        raise ValueError("Wrong `unit_index`")
     unit = None
     for x in units:
         if value < 1000:
