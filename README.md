@@ -158,6 +158,10 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ## 📝 更新日志
 
+### 1.0.1
+
+- impl [#38](https://github.com/lgc-NB2Dev/nonebot-plugin-picstatus/issues/38)
+
 ### 1.0.0
 
 重构项目：

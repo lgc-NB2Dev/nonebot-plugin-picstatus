@@ -46,10 +46,8 @@ class HeaderData:
     booted: str
 
 
-async def get_ob11_msg_num(
-    bot: BaseBot,
-) -> Tuple[Optional[int], Optional[int]]:
-    if not (OBV11Bot and isinstance(bot, OBV11Bot)):
+async def get_ob11_msg_num(bot: BaseBot) -> Tuple[Optional[int], Optional[int]]:
+    if not (config.ps_ob_v11_use_get_status and OBV11Bot and isinstance(bot, OBV11Bot)):
         return None, None
 
     try:

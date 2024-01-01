@@ -58,6 +58,7 @@ class Cfg(BaseModel):
     # region header
     ps_use_env_nick: bool = False
     ps_show_current_bot_only: bool = False
+    ps_ob_v11_use_get_status: bool = True
     # endregion
 
     # region disk
