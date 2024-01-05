@@ -16,7 +16,7 @@ from yarl import URL
 from ..config import DEFAULT_AVATAR_PATH, config
 from ..render import ENVIRONMENT, ROUTE_URL, router
 from ..statistics import bot_connect_time, nonebot_run_time, recv_num, send_num
-from ..util import format_timedelta, guess_mime_from_bytes
+from ..util import format_timedelta
 from . import register_component
 
 try:
@@ -153,7 +153,7 @@ async def _(route: Route, request: Request):
         if config.ps_default_avatar.is_file()
         else DEFAULT_AVATAR_PATH
     ).read_bytes()
-    await route.fulfill(content_type=guess_mime_from_bytes(data), body=data)
+    await route.fulfill(body=data)
 
 
 @register_component

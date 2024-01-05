@@ -18,7 +18,7 @@ from yarl import URL
 from .bg_provider import get_bg
 from .components import ComponentType, components
 from .config import TEMPLATE_PATH, config
-from .util import auto_convert_unit, guess_mime_from_bytes, percent_to_color
+from .util import auto_convert_unit, percent_to_color
 
 PatternType = Union[re.Pattern, str]
 RouterType = Callable[[Route, Request], Any]
@@ -104,7 +104,8 @@ async def render_image(main_content: str) -> bytes:
     if (p := (Path.cwd() / "picstatus-debug.html")).exists():
         p.write_text(html, encoding="u8")
     async with get_routed_page() as page:
-        await page.set_content(html, wait_until="load")
+        await page.set_content(html)
+        await page.wait_for_selector("body.done")
         elem = await page.query_selector(".main-background")
         assert elem
         return await elem.screenshot(type="jpeg")
@@ -158,7 +159,7 @@ async def _(route: Route, _):
 @router(f"{ROUTE_URL}/api/background")
 async def _(route: Route, _):
     data = await get_bg()
-    await route.fulfill(content_type=guess_mime_from_bytes(data), body=data)
+    await route.fulfill(body=data)
 
 
 router(f"{ROUTE_URL}/api/local_file*")(

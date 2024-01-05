@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["cross_platform"]
 lock_version = "4.4.1"
-content_hash = "sha256:937ae25eabeadb8d1d3f9a18076b7c84a6ac254e197d871ea0d7816b2fc5b9e3"
+content_hash = "sha256:4fbceaa88142512507d1749680bc52791fac5ad9a2aa9658e2de35d019e0720a"
 
 [[package]]
 name = "aiofiles"
@@ -497,7 +497,7 @@ files = [
 
 [[package]]
 name = "nonebot-plugin-alconna"
-version = "0.34.1"
+version = "0.35.1"
 requires_python = ">=3.8"
 summary = "Alconna Adapter for Nonebot"
 dependencies = [
@@ -508,8 +508,8 @@ dependencies = [
     "nonebot2>=2.1.0",
 ]
 files = [
-    {file = "nonebot_plugin_alconna-0.34.1-py3-none-any.whl", hash = "sha256:c8e71ffad194e30f14ae7a53e29483b2a59328df2fc8d4ba9e1c407f2f76bf0d"},
-    {file = "nonebot_plugin_alconna-0.34.1.tar.gz", hash = "sha256:12a8809bd3ee96ecaa25b20ad3950f7078eb1d109ad2f6656c581ddcdb3244d6"},
+    {file = "nonebot_plugin_alconna-0.35.1-py3-none-any.whl", hash = "sha256:70dd86b477642dc1d154aef1ceb142e5350475852f87f4b3413dfc0c7d929d87"},
+    {file = "nonebot_plugin_alconna-0.35.1.tar.gz", hash = "sha256:0940af2ddfd8cedde59123b2e3dc77aacb4efab1751d9744091d6baa69920e94"},
 ]
 
 [[package]]
@@ -745,7 +745,7 @@ files = [
 
 [[package]]
 name = "pymdown-extensions"
-version = "10.6"
+version = "10.7"
 requires_python = ">=3.8"
 summary = "Extension pack for Python Markdown."
 dependencies = [
@@ -753,8 +753,8 @@ dependencies = [
     "pyyaml",
 ]
 files = [
-    {file = "pymdown_extensions-10.6-py3-none-any.whl", hash = "sha256:561eb3a5f3c3c2512952a4d6f5b311aa124b7147bd54a3ea0f36ce030c7e3dd9"},
-    {file = "pymdown_extensions-10.6.tar.gz", hash = "sha256:e4531379e0d74b329ff264217ef5b8b1a37bed3afe36f98001b74ecff52215c0"},
+    {file = "pymdown_extensions-10.7-py3-none-any.whl", hash = "sha256:6ca215bc57bc12bf32b414887a68b810637d039124ed9b2e5bd3325cbb2c050c"},
+    {file = "pymdown_extensions-10.7.tar.gz", hash = "sha256:c0d64d5cf62566f59e6b2b690a4095c931107c250a8c8e1351c1de5f6b036deb"},
 ]
 
 [[package]]

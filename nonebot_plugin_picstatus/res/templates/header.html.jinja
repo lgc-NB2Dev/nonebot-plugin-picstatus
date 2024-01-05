@@ -1,7 +1,7 @@
 <div class="card header splitter">
   {% for info in data.bots %}
   <div class="account">
-    <img class="avatar" src="/api/bot_avatar/{{ info.self_id }}" />
+    <img class="avatar" data-src="/api/bot_avatar/{{ info.self_id }}" />
     <div class="description">
       <div class="nickname">{{ info.nick }}</div>
       <div class="status label-container">

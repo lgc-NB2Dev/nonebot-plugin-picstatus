@@ -9,6 +9,7 @@
   --primary-text-color: #3a3a3a;
   --secondary-text-color: #6a6a6a;
 
+  --default-background: #3a3a3aaa;
   --background-mask-color: #fafafa66;
   --card-background-color: #fafafaaa;
   --default-box-shadow: 2px 2px 6px #6a6a6a66;
@@ -95,7 +96,10 @@ body {
 
 .main-background {
   width: 650px;
-  background: url('/api/background') no-repeat center / cover;
+  background: var(--default-background);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
 }
 
 .main-background-mask {
