@@ -152,12 +152,12 @@ def br(text: str) -> str:
 
 
 @router(f"{ROUTE_URL}/")
-async def _(route: Route, _):
+async def _(route: Route, _: Request):
     await route.fulfill(content_type="text/html", body="<html></html>")
 
 
 @router(f"{ROUTE_URL}/api/background")
-async def _(route: Route, _):
+async def _(route: Route, _: Request):
     data = await get_bg()
     await route.fulfill(body=data)
 

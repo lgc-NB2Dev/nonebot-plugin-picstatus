@@ -7,8 +7,7 @@ require("nonebot_plugin_alconna")
 require("nonebot_plugin_userinfo")
 require("nonebot_plugin_htmlrender")
 
-from . import __main__ as __main__
-from . import statistics as statistics
+from . import __main__ as __main__, statistics as statistics
 from .components import load_components
 from .config import Cfg, config
 

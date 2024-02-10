@@ -35,6 +35,8 @@ async def _():
         ret = await collect_and_render()
     except Exception:
         logger.exception("获取运行状态图失败")
-        await UniMessage("获取运行状态图片失败，请检查后台输出").send(reply_to=config.ps_reply_target)
+        await UniMessage("获取运行状态图片失败，请检查后台输出").send(
+            reply_to=config.ps_reply_target,
+        )
     else:
         await UniMessage.image(raw=ret).send(reply_to=config.ps_reply_target)

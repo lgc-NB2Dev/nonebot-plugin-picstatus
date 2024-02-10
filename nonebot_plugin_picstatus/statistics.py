@@ -1,11 +1,11 @@
 from datetime import datetime
-from typing import Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from nonebot import get_driver
 from nonebot.adapters import Bot, Event
 from nonebot.message import event_preprocessor
 
-nonebot_run_time: datetime = datetime.now()
+nonebot_run_time: datetime = datetime.now().astimezone()
 bot_connect_time: Dict[str, datetime] = {}
 recv_num: Dict[str, int] = {}
 send_num: Dict[str, int] = {}
@@ -46,14 +46,20 @@ def method_is_send_msg(platform: str, name: str) -> bool:
 
 
 @Bot.on_called_api
-async def called_api(bot: Bot, exc: Optional[Exception], api: str, _, __):
+async def called_api(
+    bot: Bot,
+    exc: Optional[Exception],
+    api: str,
+    _: Dict[str, Any],
+    __: Any,
+):
     if (not exc) and method_is_send_msg(bot.adapter.get_name(), api):
         send_num[bot.self_id] += 1
 
 
 @driver.on_bot_connect
 async def _(bot: Bot):
-    bot_connect_time[bot.self_id] = datetime.now()
+    bot_connect_time[bot.self_id] = datetime.now().astimezone()
     recv_num[bot.self_id] = 0
     if bot.adapter.get_name() in SEND_APIS:
         send_num[bot.self_id] = 0

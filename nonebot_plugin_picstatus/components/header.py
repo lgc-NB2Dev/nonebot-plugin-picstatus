@@ -5,8 +5,7 @@ from typing import Dict, List, Optional, Tuple
 
 import psutil
 from nonebot import get_bots, logger
-from nonebot.adapters import Bot as BaseBot
-from nonebot.adapters import Event as BaseEvent
+from nonebot.adapters import Bot as BaseBot, Event as BaseEvent
 from nonebot.matcher import current_bot
 from nonebot.message import event_preprocessor
 from nonebot_plugin_userinfo import UserInfo, get_user_info
@@ -98,7 +97,7 @@ async def get_bot_status(bot: BaseBot, now_time: datetime) -> BotStatus:
 
 
 async def get_header_data() -> HeaderData:
-    now_time = datetime.now()
+    now_time = datetime.now().astimezone()
     bots = (
         [await get_bot_status(current_bot.get(), now_time)]
         if config.ps_show_current_bot_only
@@ -106,9 +105,11 @@ async def get_header_data() -> HeaderData:
             *(get_bot_status(bot, now_time) for bot in get_bots().values()),
         )
     )
-    nb_run = format_timedelta(now_time - nonebot_run_time) if nonebot_run_time else "未知"
+    nb_run = (
+        format_timedelta(now_time - nonebot_run_time) if nonebot_run_time else "未知"
+    )
     booted = format_timedelta(
-        now_time - datetime.fromtimestamp(psutil.boot_time()),
+        now_time - datetime.fromtimestamp(psutil.boot_time()),  # noqa: DTZ006
     )
     return HeaderData(bots=bots, nb_run=nb_run, booted=booted)
 
