@@ -22,7 +22,7 @@ _✨ 运行状态图片版 for NoneBot2 ✨_
 <a href="https://pypi.python.org/pypi/nonebot-plugin-picstatus">
   <img src="https://img.shields.io/pypi/v/nonebot-plugin-picstatus.svg" alt="pypi">
 </a>
-<img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="python">
+<img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="python">
 <a href="https://pypi.python.org/pypi/nonebot-plugin-picstatus">
   <img src="https://img.shields.io/pypi/dm/nonebot-plugin-picstatus" alt="pypi download">
 </a>
