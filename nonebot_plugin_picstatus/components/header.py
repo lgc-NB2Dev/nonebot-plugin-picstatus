@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
@@ -6,7 +7,7 @@ from typing import Dict, List, Optional, Tuple
 import psutil
 from nonebot import get_bots, logger
 from nonebot.adapters import Bot as BaseBot, Event as BaseEvent
-from nonebot.matcher import current_bot
+from nonebot.matcher import current_bot, current_event
 from nonebot.message import event_preprocessor
 from nonebot_plugin_userinfo import UserInfo, get_user_info
 from playwright.async_api import Request, Route
@@ -109,13 +110,12 @@ async def get_header_data() -> HeaderData:
         format_timedelta(now_time - nonebot_run_time) if nonebot_run_time else "未知"
     )
     booted = format_timedelta(
-        now_time - datetime.fromtimestamp(psutil.boot_time()),  # noqa: DTZ006
+        now_time - datetime.fromtimestamp(psutil.boot_time()).astimezone(),
     )
     return HeaderData(bots=bots, nb_run=nb_run, booted=booted)
 
 
-@event_preprocessor
-async def _(bot: BaseBot, event: BaseEvent):
+async def cache_bot_info(bot: BaseBot, event: BaseEvent):
     if bot.self_id in bot_info_cache:
         return
     try:
@@ -125,6 +125,9 @@ async def _(bot: BaseBot, event: BaseEvent):
         return
     if info:
         bot_info_cache[bot.self_id] = info
+
+
+event_preprocessor(cache_bot_info)
 
 
 @router(f"{ROUTE_URL}/api/bot_avatar/*")
@@ -159,6 +162,8 @@ async def _(route: Route, request: Request):
 
 @register_component
 async def header():
+    with suppress(Exception):
+        await cache_bot_info(current_bot.get(), current_event.get())
     return await ENVIRONMENT.get_template("header.html.jinja").render_async(
         data=await get_header_data(),
     )

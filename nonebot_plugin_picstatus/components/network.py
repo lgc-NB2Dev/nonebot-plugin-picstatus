@@ -92,7 +92,7 @@ async def get_network_connection() -> List[NetworkConnectionType]:
                 follow_redirects=True,
             ) as client:
                 start = time.time()
-                resp = await client.get(site.url)
+                resp = await client.get(str(site.url))
                 delay = (time.time() - start) * 1000
 
         except Exception as e:

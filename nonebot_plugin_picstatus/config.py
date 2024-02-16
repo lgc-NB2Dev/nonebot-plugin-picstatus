@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import List, Literal, Optional, Set
 
-from nonebot import get_driver
+from nonebot import get_plugin_config
+from nonebot.compat import type_validate_python
 from pydantic import AnyHttpUrl, BaseModel
 
 RES_PATH = Path(__file__).parent / "res"
@@ -80,8 +81,12 @@ class Cfg(BaseModel):
     ps_sort_nets: bool = True
     # connection_test
     ps_test_sites: List[TestSiteCfg] = [
-        TestSiteCfg.parse_obj({"name": "百度", "url": "https://www.baidu.com/"}),
-        TestSiteCfg.parse_obj(
+        type_validate_python(
+            TestSiteCfg,
+            {"name": "百度", "url": "https://www.baidu.com/"},
+        ),
+        type_validate_python(
+            TestSiteCfg,
             {"name": "Google", "url": "https://www.google.com/", "use_proxy": True},
         ),
     ]
@@ -98,4 +103,4 @@ class Cfg(BaseModel):
     # endregion components
 
 
-config: Cfg = Cfg.parse_obj(get_driver().config.dict())
+config: Cfg = get_plugin_config(Cfg)

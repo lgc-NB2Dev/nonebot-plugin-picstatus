@@ -16,18 +16,27 @@
 
 _✨ 运行状态图片版 for NoneBot2 ✨_
 
+<img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="python">
+<a href="https://pdm.fming.dev">
+  <img src="https://img.shields.io/badge/pdm-managed-blueviolet" alt="pdm-managed">
+</a>
+<a href="https://wakatime.com/badge/user/b61b0f9a-f40b-4c82-bc51-0a75c67bfccf/project/bfec6993-aa9e-42fb-9f3e-53a5d4739373">
+  <img src="https://wakatime.com/badge/user/b61b0f9a-f40b-4c82-bc51-0a75c67bfccf/project/bfec6993-aa9e-42fb-9f3e-53a5d4739373.svg" alt="wakatime">
+</a>
+
+<br />
+
+<a href="https://pydantic.dev">
+  <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/lgc-NB2Dev/readme/main/template/pyd-v1-or-v2.json" alt="Pydantic Version 1 Or 2" >
+</a>
 <a href="./LICENSE">
   <img src="https://img.shields.io/github/license/lgc2333/nonebot-plugin-picstatus.svg" alt="license">
 </a>
 <a href="https://pypi.python.org/pypi/nonebot-plugin-picstatus">
   <img src="https://img.shields.io/pypi/v/nonebot-plugin-picstatus.svg" alt="pypi">
 </a>
-<img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="python">
 <a href="https://pypi.python.org/pypi/nonebot-plugin-picstatus">
   <img src="https://img.shields.io/pypi/dm/nonebot-plugin-picstatus" alt="pypi download">
-</a>
-<a href="https://wakatime.com/badge/user/b61b0f9a-f40b-4c82-bc51-0a75c67bfccf/project/bfec6993-aa9e-42fb-9f3e-53a5d4739373">
-  <img src="https://wakatime.com/badge/user/b61b0f9a-f40b-4c82-bc51-0a75c67bfccf/project/bfec6993-aa9e-42fb-9f3e-53a5d4739373.svg" alt="wakatime">
 </a>
 
 </div>
@@ -157,6 +166,10 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
   </details>
 
 ## 📝 更新日志
+
+### 1.1.0
+
+- 支持 Pydantic V2
 
 ### 1.0.3
 
