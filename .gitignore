@@ -6,3 +6,4 @@
 .pdm-python
 build/
 __pycache__
+/nonebot_plugin_picstatus/res/picstatus-debug.html

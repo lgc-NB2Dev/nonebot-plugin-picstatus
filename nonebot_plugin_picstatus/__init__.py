@@ -19,7 +19,7 @@ if config.ps_need_at:
 if config.ps_only_su:
     usage += "\n注意：仅SuperUser可以使用此指令"
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 __plugin_meta__ = PluginMetadata(
     name="PicStatus",
     description="以图片形式显示当前设备的运行状态",

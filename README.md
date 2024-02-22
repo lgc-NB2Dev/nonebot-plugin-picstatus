@@ -167,6 +167,11 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ## 📝 更新日志
 
+### 1.1.1
+
+- 新增内置 CSS `theme-vanilla.css`
+- 微调默认 CSS
+
 ### 1.1.0
 
 - 支持 Pydantic V2

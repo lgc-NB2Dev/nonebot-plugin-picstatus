@@ -14,15 +14,14 @@
   --card-background-color: #fafafaaa;
   --default-box-shadow: 2px 2px 6px #6a6a6a66;
 
-  --color: var(--secondary-text-color);
-  --label-red-text-color: var(--status-default-text-color);
-  --label-orange-text-color: var(--status-default-text-color);
-  --label-yellow-text-color: var(--status-default-text-color);
-  --label-green-text-color: var(--status-default-text-color);
-  --label-cyan-text-color: var(--status-default-text-color);
-  --label-blue-text-color: var(--status-default-text-color);
-  --label-purple-text-color: var(--status-default-text-color);
-  --label-gray-text-color: var(--status-default-text-color);
+  --label-red-text-color: var(--secondary-text-color);
+  --label-orange-text-color: var(--secondary-text-color);
+  --label-yellow-text-color: var(--secondary-text-color);
+  --label-green-text-color: var(--secondary-text-color);
+  --label-cyan-text-color: var(--secondary-text-color);
+  --label-blue-text-color: var(--secondary-text-color);
+  --label-purple-text-color: var(--secondary-text-color);
+  --label-gray-text-color: var(--secondary-text-color);
   --label-black-text-color: #fafafa;
 
   --background-color: var(--card-background-color);
@@ -36,52 +35,74 @@
   --label-gray-bg-color: #bebebeaa;
   --label-black-bg-color: #3a3a3aaa;
 
+  --prog-low-text-color: var(--secondary-text-color);
+  --prog-medium-text-color: var(--secondary-text-color);
+  --prog-high-text-color: var(--secondary-text-color);
+  --prog-low-bg-color: var(--label-green-bg-color);
+  --prog-medium-bg-color: var(--label-orange-bg-color);
+  --prog-high-bg-color: var(--label-red-bg-color);
+
   --segment-color: #bebebe;
 }
 
 .red {
   --background-color: var(--label-red-bg-color);
-  --color: var(--label-red-text-color);
+  --secondary-text-color: var(--label-red-text-color);
 }
 
 .orange {
   --background-color: var(--label-orange-bg-color);
-  --color: var(--label-orange-text-color);
+  --secondary-text-color: var(--label-orange-text-color);
 }
 
 .yellow {
   --background-color: var(--label-yellow-bg-color);
-  --color: var(--label-yellow-text-color);
+  --secondary-text-color: var(--label-yellow-text-color);
 }
 
 .green {
   --background-color: var(--label-green-bg-color);
-  --color: var(--label-green-text-color);
+  --secondary-text-color: var(--label-green-text-color);
 }
 
 .cyan {
   --background-color: var(--label-cyan-bg-color);
-  --color: var(--label-cyan-text-color);
+  --secondary-text-color: var(--label-cyan-text-color);
 }
 
 .blue {
   --background-color: var(--label-blue-bg-color);
-  --color: var(--label-blue-text-color);
+  --secondary-text-color: var(--label-blue-text-color);
 }
 
 .purple {
   --background-color: var(--label-purple-bg-color);
-  --color: var(--label-purple-text-color);
+  --secondary-text-color: var(--label-purple-text-color);
 }
 
 .gray {
   --background-color: var(--label-gray-bg-color);
-  --color: var(--label-gray-text-color);
+  --secondary-text-color: var(--label-gray-text-color);
 }
 
 .black {
   --background-color: var(--label-black-bg-color);
-  --color: var(--label-black-text-color);
+  --secondary-text-color: var(--label-black-text-color);
+}
+
+.prog-low {
+  --background-color: var(--prog-low-bg-color);
+  --secondary-text-color: var(--prog-low-text-color);
+}
+
+.prog-medium {
+  --background-color: var(--prog-medium-bg-color);
+  --secondary-text-color: var(--prog-medium-text-color);
+}
+
+.prog-high {
+  --background-color: var(--prog-high-bg-color);
+  --secondary-text-color: var(--prog-high-text-color);
 }
 
 .monospace {
@@ -139,7 +160,7 @@ span.label {
   border-radius: 4px;
   box-shadow: var(--default-box-shadow);
   background-color: var(--background-color);
-  color: var(--color);
+  color: var(--secondary-text-color);
 }
 
 .label-container {
@@ -252,6 +273,7 @@ span.label {
 .donut-chart .desc {
   font-size: 12px;
   word-break: break-word;
+  color: var(--secondary-text-color);
 }
 
 /* Progress Bar */
@@ -343,5 +365,5 @@ span.label {
   font-size: 14px;
   text-align: center;
   color: var(--primary-text-color);
-  text-shadow: 1px 1px 1px var(--label-black-text-color);
+  text-shadow: var(--default-box-shadow);
 }

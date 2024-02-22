@@ -39,7 +39,7 @@ def match_list_regexp(reg_list: List[str], txt: str) -> Optional[re.Match]:
 
 def percent_to_color(percent: float) -> str:
     if percent < 70:
-        return "green"
+        return "prog-low"
     if percent < 90:
-        return "orange"
-    return "red"
+        return "prog-medium"
+    return "prog-high"
