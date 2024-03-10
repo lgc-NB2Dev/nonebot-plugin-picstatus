@@ -5,7 +5,7 @@ description = "A NoneBot2 plugin generates a picture which shows the status of c
 authors = [{ name = "student_2333", email = "lgc2333@126.com" }]
 dependencies = [
     "nonebot2>=2.2.0",
-    "nonebot-plugin-alconna>=0.37.0",
+    "nonebot-plugin-alconna>=0.40.0rc1",
     "nonebot-plugin-userinfo>=0.1.3",
     "nonebot-plugin-htmlrender>=0.2.3",
     "psutil>=5.9.2",
