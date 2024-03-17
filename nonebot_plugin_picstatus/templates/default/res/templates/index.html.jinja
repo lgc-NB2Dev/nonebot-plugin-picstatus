@@ -35,10 +35,10 @@
   </div>
 </body>
 
-<script src="/js/preload.js"></script>
+<script src="/js/init-global.js"></script>
 <script src="/js/lazy-load.js"></script>
 {% for script in config.ps_additional_script -%}
 <script src="{{ script }}"></script>{% endfor %}
-<script src="/js/post-load.js"></script>
+<script src="/js/load-plugin.js"></script>
 
 </html>

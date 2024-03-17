@@ -120,7 +120,7 @@ plugins = [
 
 ## ⚙️ 配置
 
-见 [.env.example](https://github.com/lgc2333/nonebot-plugin-picstatus/blob/master/.env.example)
+### 见 [.env.example](https://github.com/lgc2333/nonebot-plugin-picstatus/blob/master/.env.example)
 
 ## 🎉 使用
 
@@ -167,6 +167,23 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ## 📝 更新日志
 
+### 2.0.0
+
+- 代码重构，现在开发者可以更自由灵活的添加新状态图片样式
+- 配置项变动：
+  - 新增 `PS_TEMPLATE`
+  - 新增 `PS_COLLECT_INTERVAL`
+  - 新增 `PS_DEFAULT_COLLECT_CACHE_SIZE`
+  - 新增 `PS_COLLECT_CACHE_SIZE`
+  - 新增 `PS_COUNT_MESSAGE_SENT_EVENT`
+  - 新增 `PS_DISCONNECT_RESET_COUNTER`
+  - 重命名 `PS_COMPONENTS` -> `PS_DEFAULT_COMPONENTS`
+  - 重命名 `PS_ADDITIONAL_CSS` -> `PS_DEFAULT_ADDITIONAL_CSS`
+  - 重命名 `PS_ADDITIONAL_SCRIPT` -> `PS_DEFAULT_ADDITIONAL_SCRIPT`
+
+<details>
+<summary><strong>v1 更新日志（点击展开）</strong></summary>
+
 ### 1.1.1
 
 - 新增内置 CSS `theme-vanilla.css`
@@ -186,7 +203,7 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ### 1.0.1
 
-- impl [#38](https://github.com/lgc-NB2Dev/nonebot-plugin-picstatus/issues/38)
+- impl [#38](https://github.com/lgc-NB2Dev/nonebot-plugin-picstatus/issues/38)，新增配置 `PS_OB_V11_USE_GET_STATUS`
 
 ### 1.0.0
 
@@ -212,8 +229,10 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
   - 删除 `PS_MAX_TEXT_LEN`
   - 删除 `PS_DEFAULT_BG`
 
+</details>
+
 <details>
-<summary><strong>历史更新日志（点击展开）</strong></summary>
+<summary><strong>v0 更新日志（点击展开）</strong></summary>
 
 ### 0.5.7
 
