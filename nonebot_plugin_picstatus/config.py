@@ -1,9 +1,9 @@
 from pathlib import Path
-from typing import List, Literal, Optional, Set
+from typing import Dict, List, Literal, Optional, Set
 
 from nonebot import get_plugin_config
 from nonebot.compat import type_validate_python
-from pydantic import AnyHttpUrl, BaseModel
+from pydantic import AnyHttpUrl, BaseModel, Field
 
 RES_PATH = Path(__file__).parent / "res"
 ASSETS_PATH = RES_PATH / "assets"
@@ -36,6 +36,9 @@ class Cfg(BaseModel):
     ps_need_at: bool = False
     ps_reply_target: bool = True
     ps_req_timeout: Optional[int] = 10
+    ps_collect_interval: int = 2
+    ps_default_collect_cache_size: int = 1
+    ps_collect_cache_size: Dict[str, int] = Field(default_factory=dict)
     # endregion
 
     # region style

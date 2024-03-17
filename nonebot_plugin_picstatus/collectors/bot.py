@@ -2,9 +2,8 @@ import asyncio
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
-import psutil
 from nonebot import get_bots, logger
 from nonebot.adapters import Bot as BaseBot, Event as BaseEvent
 from nonebot.matcher import current_bot, current_event
@@ -14,16 +13,18 @@ from playwright.async_api import Request, Route
 from yarl import URL
 
 from ..config import DEFAULT_AVATAR_PATH, config
-from ..render import ENVIRONMENT, ROUTE_URL, router
-from ..statistics import bot_connect_time, nonebot_run_time, recv_num, send_num
+from ..render import ROUTE_URL, router
+from ..statistics import bot_connect_time, recv_num, send_num
 from ..util import format_timedelta
-from . import register_component
+from . import normal_collector
 
 try:
     from nonebot.adapters.onebot.v11 import Bot as OBV11Bot
 except ImportError:
     OBV11Bot = None
 
+
+# TODO split cache bot info code to another file
 
 bot_info_cache: Dict[str, UserInfo] = {}
 bot_avatar_cache: Dict[str, bytes] = {}
@@ -37,13 +38,6 @@ class BotStatus:
     bot_connected: str
     msg_rec: str
     msg_sent: str
-
-
-@dataclass
-class HeaderData:
-    bots: List[BotStatus]
-    nb_run: str
-    booted: str
 
 
 async def get_ob11_msg_num(bot: BaseBot) -> Tuple[Optional[int], Optional[int]]:
@@ -97,24 +91,6 @@ async def get_bot_status(bot: BaseBot, now_time: datetime) -> BotStatus:
     )
 
 
-async def get_header_data() -> HeaderData:
-    now_time = datetime.now().astimezone()
-    bots = (
-        [await get_bot_status(current_bot.get(), now_time)]
-        if config.ps_show_current_bot_only
-        else await asyncio.gather(
-            *(get_bot_status(bot, now_time) for bot in get_bots().values()),
-        )
-    )
-    nb_run = (
-        format_timedelta(now_time - nonebot_run_time) if nonebot_run_time else "未知"
-    )
-    booted = format_timedelta(
-        now_time - datetime.fromtimestamp(psutil.boot_time()).astimezone(),
-    )
-    return HeaderData(bots=bots, nb_run=nb_run, booted=booted)
-
-
 async def cache_bot_info(bot: BaseBot, event: BaseEvent):
     if bot.self_id in bot_info_cache:
         return
@@ -130,6 +106,20 @@ async def cache_bot_info(bot: BaseBot, event: BaseEvent):
 
 
 event_preprocessor(cache_bot_info)
+
+
+@normal_collector()
+async def bots():
+    with suppress(Exception):
+        await cache_bot_info(current_bot.get(), current_event.get())
+    now_time = datetime.now().astimezone()
+    return (
+        [await get_bot_status(current_bot.get(), now_time)]
+        if config.ps_show_current_bot_only
+        else await asyncio.gather(
+            *(get_bot_status(bot, now_time) for bot in get_bots().values()),
+        )
+    )
 
 
 @router(f"{ROUTE_URL}/api/bot_avatar/*")
@@ -160,12 +150,3 @@ async def _(route: Route, request: Request):
         else DEFAULT_AVATAR_PATH
     ).read_bytes()
     await route.fulfill(body=data)
-
-
-@register_component
-async def header():
-    with suppress(Exception):
-        await cache_bot_info(current_bot.get(), current_event.get())
-    return await ENVIRONMENT.get_template("header.html.jinja").render_async(
-        data=await get_header_data(),
-    )

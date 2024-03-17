@@ -4,11 +4,11 @@ from functools import partial
 from typing import List, Optional, cast
 
 import psutil
+from cookit import auto_convert_byte
 from cpuinfo import get_cpu_info
 from nonebot import logger
 
 from ..render import ENVIRONMENT
-from ..util import auto_convert_unit
 from . import register_component
 
 
@@ -71,7 +71,7 @@ cpu_brand = get_cpu_brand()
 
 
 def format_freq_txt(freq: CpuFreq) -> str:
-    cu = partial(auto_convert_unit, suffix="Hz", multiplier=1000, unit_index=2)
+    cu = partial(auto_convert_byte, suffix="Hz", multiplier=1000, unit_index=2)
     if not freq.current:
         return "主频未知"
     if not freq.max:
@@ -128,13 +128,13 @@ def to_donut_data(data: CpuMemoryStat) -> List[DonutData]:
         DonutData(
             percent=data.ram_stat.percent,
             title="RAM",
-            caption=f"{auto_convert_unit(data.ram_stat.used)} / {auto_convert_unit(data.ram_stat.total)}",
+            caption=f"{auto_convert_byte(data.ram_stat.used)} / {auto_convert_byte(data.ram_stat.total)}",
         ),
         DonutData(
             percent=data.swap_stat.percent if data.swap_stat.total > 0 else None,
             title="SWAP",
             caption=(
-                f"{auto_convert_unit(data.swap_stat.used)} / {auto_convert_unit(data.swap_stat.total)}"
+                f"{auto_convert_byte(data.swap_stat.used)} / {auto_convert_byte(data.swap_stat.total)}"
                 if data.swap_stat.total > 0
                 else "??.??B / ??.??B"
             ),

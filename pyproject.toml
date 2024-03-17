@@ -5,9 +5,11 @@ description = "A NoneBot2 plugin generates a picture which shows the status of c
 authors = [{ name = "student_2333", email = "lgc2333@126.com" }]
 dependencies = [
     "nonebot2>=2.2.0",
+    "nonebot-plugin-apscheduler>=0.4.0",
     "nonebot-plugin-alconna>=0.40.1",
     "nonebot-plugin-userinfo>=0.1.3",
     "nonebot-plugin-htmlrender>=0.2.3",
+    "cookit[pydantic]>=0.2.0",
     "psutil>=5.9.2",
     "py-cpuinfo>=9.0.0",
     "anyio>=3.6.2",
