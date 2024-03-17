@@ -37,7 +37,7 @@ async def cpu_count_logical() -> int:
     return psutil.cpu_count()
 
 
-@periodic_collector()
+@first_time_collector()
 async def cpu_count() -> int:
     return psutil.cpu_count(logical=False)
 

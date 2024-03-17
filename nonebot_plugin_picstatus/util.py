@@ -1,8 +1,11 @@
 import re
 from functools import partial
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
-from cookit.common.math import format_timedelta
+from cookit import auto_convert_byte, format_timedelta
+
+if TYPE_CHECKING:
+    from .collectors.cpu import CpuFreq
 
 format_time_delta_ps = partial(format_timedelta, day_divider=" ", day_suffix="天")
 
@@ -17,3 +20,14 @@ def percent_to_color(percent: float) -> str:
     if percent < 90:
         return "prog-medium"
     return "prog-high"
+
+
+def format_cpu_freq(freq: "CpuFreq") -> str:
+    cu = partial(auto_convert_byte, suffix="Hz", unit_index=2, with_space=False)
+    if not freq.current:
+        return "主频未知"
+    if not freq.max:
+        return cu(value=freq.current)
+    if freq.max == freq.current:
+        return cu(value=freq.max)
+    return f"{cu(value=freq.current)} / {cu(value=freq.max)}"

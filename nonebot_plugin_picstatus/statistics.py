@@ -1,14 +1,20 @@
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from nonebot import get_driver
-from nonebot.adapters import Bot, Event
+from nonebot import get_driver, logger
+from nonebot.adapters import Bot, Bot as BaseBot, Event, Event as BaseEvent
 from nonebot.message import event_preprocessor
+from nonebot_plugin_userinfo import UserInfo, get_user_info
+
+from .config import config
 
 nonebot_run_time: datetime = datetime.now().astimezone()
 bot_connect_time: Dict[str, datetime] = {}
 recv_num: Dict[str, int] = {}
 send_num: Dict[str, int] = {}
+
+bot_info_cache: Dict[str, UserInfo] = {}
+bot_avatar_cache: Dict[str, bytes] = {}
 
 driver = get_driver()
 
@@ -60,19 +66,40 @@ async def called_api(
 @driver.on_bot_connect
 async def _(bot: Bot):
     bot_connect_time[bot.self_id] = datetime.now().astimezone()
-    recv_num[bot.self_id] = 0
-    if bot.adapter.get_name() in SEND_APIS:
+    if bot.self_id not in recv_num:
+        recv_num[bot.self_id] = 0
+    if (bot.self_id not in send_num) and (bot.adapter.get_name() in SEND_APIS):
         send_num[bot.self_id] = 0
 
 
 @driver.on_bot_disconnect
 async def _(bot: Bot):
     bot_connect_time.pop(bot.self_id, None)
-    recv_num.pop(bot.self_id, None)
-    send_num.pop(bot.self_id, None)
+    if config.ps_disconnect_reset_counter:
+        recv_num.pop(bot.self_id, None)
+        send_num.pop(bot.self_id, None)
 
 
 @event_preprocessor
 async def _(bot: Bot, event: Event):
     if event.get_type() == "message":
         recv_num[bot.self_id] += 1
+
+
+async def cache_bot_info(bot: BaseBot, event: BaseEvent):
+    try:
+        info = await get_user_info(bot, event, bot.self_id)
+    except ValueError as e:
+        logger.debug(e)
+    except Exception as e:
+        logger.warning(f"Error when getting bot info: {e.__class__.__name__}: {e}")
+    else:
+        if info:
+            bot_info_cache[bot.self_id] = info
+
+
+@event_preprocessor
+async def _(bot: BaseBot, event: BaseEvent):
+    if bot.self_id in bot_info_cache:
+        return
+    await cache_bot_info(bot, event)

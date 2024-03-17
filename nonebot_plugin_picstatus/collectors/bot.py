@@ -1,20 +1,19 @@
 import asyncio
-from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 
 from nonebot import get_bots, logger
-from nonebot.adapters import Bot as BaseBot, Event as BaseEvent
-from nonebot.matcher import current_bot, current_event
-from nonebot.message import event_preprocessor
-from nonebot_plugin_userinfo import UserInfo, get_user_info
-from playwright.async_api import Request, Route
-from yarl import URL
+from nonebot.adapters import Bot as BaseBot
+from nonebot.matcher import current_bot
 
-from ..config import DEFAULT_AVATAR_PATH, config
-from ..render import ROUTE_URL, router
-from ..statistics import bot_connect_time, recv_num, send_num
+from ..config import config
+from ..statistics import (
+    bot_connect_time,
+    bot_info_cache,
+    recv_num,
+    send_num,
+)
 from ..util import format_timedelta
 from . import normal_collector
 
@@ -22,12 +21,6 @@ try:
     from nonebot.adapters.onebot.v11 import Bot as OBV11Bot
 except ImportError:
     OBV11Bot = None
-
-
-# TODO split cache bot info code to another file
-
-bot_info_cache: Dict[str, UserInfo] = {}
-bot_avatar_cache: Dict[str, bytes] = {}
 
 
 @dataclass
@@ -91,27 +84,8 @@ async def get_bot_status(bot: BaseBot, now_time: datetime) -> BotStatus:
     )
 
 
-async def cache_bot_info(bot: BaseBot, event: BaseEvent):
-    if bot.self_id in bot_info_cache:
-        return
-    try:
-        info = await get_user_info(bot, event, bot.self_id)
-    except ValueError as e:
-        logger.debug(e)
-    except Exception as e:
-        logger.warning(f"Error when getting bot info: {e.__class__.__name__}: {e}")
-    else:
-        if info:
-            bot_info_cache[bot.self_id] = info
-
-
-event_preprocessor(cache_bot_info)
-
-
 @normal_collector()
 async def bots():
-    with suppress(Exception):
-        await cache_bot_info(current_bot.get(), current_event.get())
     now_time = datetime.now().astimezone()
     return (
         [await get_bot_status(current_bot.get(), now_time)]
@@ -120,33 +94,3 @@ async def bots():
             *(get_bot_status(bot, now_time) for bot in get_bots().values()),
         )
     )
-
-
-@router(f"{ROUTE_URL}/api/bot_avatar/*")
-async def _(route: Route, request: Request):
-    url = URL(request.url)
-    self_id = url.parts[-1]
-
-    if self_id in bot_avatar_cache:
-        await route.fulfill(body=bot_avatar_cache[self_id])
-        return
-
-    if (self_id in bot_info_cache) and (avatar := bot_info_cache[self_id].user_avatar):
-        try:
-            img = await avatar.get_image()
-        except Exception as e:
-            logger.warning(
-                f"Error when getting bot avatar, fallback to default: "
-                f"{e.__class__.__name__}: {e}",
-            )
-        else:
-            bot_avatar_cache[self_id] = img
-            await route.fulfill(body=img)
-            return
-
-    data = (
-        config.ps_default_avatar
-        if config.ps_default_avatar.is_file()
-        else DEFAULT_AVATAR_PATH
-    ).read_bytes()
-    await route.fulfill(body=data)

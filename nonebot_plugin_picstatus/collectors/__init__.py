@@ -17,7 +17,7 @@ from typing import (
 from typing_extensions import override
 
 from cookit import SizedList
-from nonebot import logger
+from nonebot import get_driver, logger
 from nonebot_plugin_apscheduler import scheduler
 
 from ..config import config
@@ -36,7 +36,10 @@ class SkipCollectError(Exception):
 
 class Collector(Generic[T]):
     @abstractmethod
-    async def get(self) -> T: ...
+    async def _get(self) -> T: ...
+
+    async def get(self) -> T:
+        return await self._get()
 
 
 class BaseNormalCollector(Generic[T], Collector[T]):
@@ -52,7 +55,7 @@ class BaseFirstTimeCollector(Generic[T], Collector[T]):
     async def get(self) -> T:
         if not isinstance(self._cached, Undefined):
             return self._cached
-        data = await self.get()
+        data = await self._get()
         self._cached = data
         return data
 
@@ -62,7 +65,8 @@ class BasePeriodicCollector(Generic[T], Collector[SizedList[T]]):
         super().__init__()
         self.data = SizedList[T](size=size)
 
-    async def get(self) -> SizedList[T]:
+    @override
+    async def _get(self) -> SizedList[T]:
         return self.data
 
     @abstractmethod
@@ -88,12 +92,15 @@ def collector(name: str):
         if name in registered_collectors:
             raise ValueError(f"Collector {name} already exists")
         registered_collectors[name] = cls
+        logger.debug(f"Registered collector {name}")
         return cls
 
     return deco
 
 
 def enable_collector(name: str):
+    if name not in registered_collectors:
+        raise ValueError(f"Collector {name} not found")
     cls = registered_collectors[name]
     if issubclass(cls, BasePeriodicCollector) and name in config.ps_collect_cache_size:
         instance = cls(size=config.ps_collect_cache_size[name])
@@ -102,14 +109,19 @@ def enable_collector(name: str):
     enabled_collectors[name] = instance
 
 
+def enable_collectors(*names: str):
+    for name in names:
+        enable_collector(name)
+
+
 def functional_collector(cls: Type[Collector], name: Optional[str] = None):
     def deco(func: TCF) -> TCF:
         collector_name = name or func.__name__
-        if not name:
+        if not collector_name:
             raise ValueError("name must be provided")
 
         class Collector(cls):
-            async def get(self) -> Any:
+            async def _get(self) -> Any:
                 return await func()
 
         collector(collector_name)(Collector)
@@ -156,17 +168,6 @@ class TimeBasedCounterCollector(Generic[T, R], BasePeriodicCollector[R]):
         return await self._calc(past, self.last_obj, time_passed)
 
 
-@scheduler.scheduled_job("interval", seconds=config.ps_collect_interval)
-async def _():
-    await asyncio.gather(
-        *(
-            x.collect()
-            for x in enabled_collectors.values()
-            if isinstance(x, BasePeriodicCollector)
-        ),
-    )
-
-
 async def collect_all() -> Dict[str, Any]:
     async def get(name: str):
         return name, await enabled_collectors[name].get()
@@ -179,3 +180,28 @@ def load_collectors():
     for module in Path(__file__).parent.iterdir():
         if not module.name.startswith("_"):
             importlib.import_module(f".{module.stem}", __package__)
+
+
+driver = get_driver()
+
+
+@driver.on_startup
+async def _():
+    await asyncio.gather(
+        *(
+            x.get()
+            for x in enabled_collectors.values()
+            if isinstance(x, BaseFirstTimeCollector)
+        ),
+    )
+
+
+@scheduler.scheduled_job("interval", seconds=config.ps_collect_interval)
+async def _():
+    await asyncio.gather(
+        *(
+            x.collect()
+            for x in enabled_collectors.values()
+            if isinstance(x, BasePeriodicCollector)
+        ),
+    )

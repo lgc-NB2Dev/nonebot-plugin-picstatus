@@ -37,7 +37,7 @@ NetworkConnectionType = Union[NetworkConnectionOK, NetworkConnectionError]
 
 
 @collector("network_io")
-class DiskIOCollector(TimeBasedCounterCollector[Dict[str, snetio], List[NetworkIO]]):
+class NetworkIOCollector(TimeBasedCounterCollector[Dict[str, snetio], List[NetworkIO]]):
     async def _calc(
         self,
         past: Dict[str, snetio],

@@ -1,0 +1,140 @@
+{% macro donut_chart(percent, title, caption) %}
+<div class="donut-chart">
+  <div class="chart-wrapper">
+    <svg class="chart" style="{% if percent != None %}--percent: {{ percent / 100 }}{% endif %}">
+      <circle class="empty" cx="50%" cy="50%" r="67.5px" />
+      {% if percent != None %}
+      <circle class="slice {{ percent | percent_to_color }}" cx="50%" cy="50%" r="67.5px" />
+      {% endif %}
+    </svg>
+    <div class="shadow"></div>
+    <div class="label">
+      {%- if percent == None %}未部署
+      {%- else %}{{ '{0:.0f}%'.format(percent) }}{% endif -%}
+    </div>
+  </div>
+  <div class="title">{{ title }}</div>
+  <div class="desc">{{ caption | br }}</div>
+</div>
+{% endmacro %}
+
+{% macro header(d) %}
+<div class="card header splitter">
+  {% for info in d.bots %}
+  <div class="account">
+    <img class="avatar" data-src="/api/bot_avatar/{{ info.self_id }}" />
+    <div class="description">
+      <div class="nickname">{{ info.nick }}</div>
+      <div class="status label-container">
+        <span class="label purple">{{ info.adapter }}</span>
+        <span class="label green">Bot已连接 {{ info.bot_connected }}</span>
+        <span class="label blue">收 {{ info.msg_rec }}</span>
+        <span class="label orange">发 {{ info.msg_sent }}</span>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  <div class="extra label-container">
+    <span class="label gray">NoneBot运行 {{ d.nonebot_run_time }}</span>
+    <span class="label gray">系统运行 {{ d.system_run_time }}</span>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro cpu_mem(d) %}
+{% set freq = d.cpu_freq | format_cpu_freq %}
+{% set ram_used = d.memory_stat.used | auto_convert_unit %}
+{% set ram_total = d.memory_stat.total | auto_convert_unit %}
+{% set swap_used = d.swap_stat.used | auto_convert_unit %}
+{% set swap_total = d.swap_stat.total | auto_convert_unit %}
+<div class="card cpu-mem-usage donut-chart-line">
+  {{ donut_chart(d.cpu_percent, "CPU", "{}核 {}线程 {}\n{}".format(d.cpu_count, d.cpu_count_logical, freq, d.cpu_brand)) }}
+  {{ donut_chart(d.memory_stat.percent, "RAM", "{} / {}").format(ram_used, ram_total) }}
+  {{ donut_chart(d.swap_stat.percent, "SWAP", "{} / {}").format(swap_used, swap_total) }}
+</div>
+{% endmacro %}
+
+{% macro disk(d) %}
+<div class="card disk-info splitter">
+  <div class="list-grid disk-usage">
+    {% for it in d.disk_usage %}
+    <div>{{ it.name }}</div>
+    <div class="progress-bar">
+      <div class="background"></div>
+      {% if it.exception %}
+      <div class="label">{{ it.exception }}</div>
+      {% else %}
+      <div class="progress {{ it.percent | percent_to_color }}" style="width: {{ it.percent }}%"></div>
+      <div class="label">{{ it.used | auto_convert_unit }} / {{ it.total | auto_convert_unit }}</div>
+      {% endif %}
+    </div>
+    <div class="align-right">
+      {%- if it.percent %}{{ '{0:.1f}%'.format(it.percent) }}
+      {%- else %}??.?%{% endif -%}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if d.disk_io -%}
+  <div class="list-grid disk-io">
+    {% for it in d.disk_io %}
+    <div>{{ it.name }}</div>
+    <div>读</div>
+    <div class="align-right">{{ it.read | auto_convert_unit(suffix='/s') }}</div>
+    <div>|</div>
+    <div>写</div>
+    <div class="align-right">{{ it.write | auto_convert_unit(suffix='/s') }}</div>
+    {% endfor %}
+  </div>
+  {%- endif %}
+</div>
+{% endmacro %}
+
+{% macro network(d) %}
+<div class="card network-info splitter">
+  <div class="list-grid network-io">
+    {% for it in d.network_io %}
+    <div>{{ it.name }}</div>
+    <div>↑</div>
+    <div class="align-right">{{ it.sent | auto_convert_unit(suffix='/s') }}</div>
+    <div>|</div>
+    <div>↓</div>
+    <div class="align-right">{{ it.recv | auto_convert_unit(suffix='/s') }}</div>
+    {% endfor %}
+  </div>
+  <div class="list-grid network-connection-test">
+    {% for it in d.network_connection %}
+    <div>{{ it.name }}</div>
+    {% if it.error %}
+    <div class="error">{{ it.error }}</div>
+    {% else %}
+    <div>{{ it.status }} {{ it.reason }}</div>
+    <div>|</div>
+    <div>{{ '{0:.2f}ms'.format(it.delay) }}</div>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro process(d) %}
+<div class="card process-info splitter">
+  <div class="list-grid process-usage">
+    {% for it in d.process_status %}
+    <div>{{ it.name }}</div>
+    <div>CPU</div>
+    <div class="align-right">{{ '{0:.1f}%'.format(it.cpu) }}</div>
+    <div>|</div>
+    <div>MEM</div>
+    <div class="align-right">{{ it.mem | auto_convert_unit }}</div>
+    {% endfor %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro footer(d) %}
+<div class="footer">
+  NoneBot {{ d.nonebot_version }} × PicStatus {{ d.ps_version }} | {{ d.time }}<br />
+  {{ d.python_version }} | {{ d.system_name }}
+</div>
+{% endmacro %}

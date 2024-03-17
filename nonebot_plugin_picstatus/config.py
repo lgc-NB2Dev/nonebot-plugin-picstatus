@@ -20,7 +20,7 @@ class TestSiteCfg(BaseModel):
     use_proxy: bool = False
 
 
-class Cfg(BaseModel):
+class ConfigModel(BaseModel):
     # region builtin
     superusers: Set[str]
     nickname: Set[str]
@@ -39,19 +39,11 @@ class Cfg(BaseModel):
     ps_collect_interval: int = 2
     ps_default_collect_cache_size: int = 1
     ps_collect_cache_size: Dict[str, int] = Field(default_factory=dict)
+    ps_template: str = "default"
+    ps_disconnect_reset_counter: bool = True
     # endregion
 
     # region style
-    ps_components: List[str] = [
-        "header",
-        "cpu_mem",
-        "disk",
-        "network",
-        "process",
-        "footer",
-    ]
-    ps_additional_css: List[str] = []
-    ps_additional_script: List[str] = []
     ps_bg_provider: str = "gm"
     ps_bg_lolicon_r18_type: Literal[0, 1, 2] = 0
     ps_bg_local_path: Path = DEFAULT_BG_PATH
@@ -106,4 +98,4 @@ class Cfg(BaseModel):
     # endregion components
 
 
-config: Cfg = get_plugin_config(Cfg)
+config: ConfigModel = get_plugin_config(ConfigModel)

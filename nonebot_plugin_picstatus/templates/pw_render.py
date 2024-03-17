@@ -1,36 +1,33 @@
-import asyncio
 import mimetypes
 import re
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from functools import wraps
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, List, Optional, TypeVar, Union
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional, TypeVar, Union
 from urllib.parse import urlencode
 
 import anyio
 import jinja2
+from cookit import auto_convert_byte
 from nonebot import logger
 from nonebot_plugin_htmlrender import get_new_page
 from playwright.async_api import Page, Request, Route
 from yarl import URL
 
-from .bg_provider import get_bg
-from .components import ComponentType, components
-from .config import TEMPLATE_PATH, config
-from .util import auto_convert_unit, percent_to_color
+from ..bg_provider import get_bg
+from ..config import DEFAULT_AVATAR_PATH, config
+from ..statistics import bot_avatar_cache, bot_info_cache
+from ..util import format_cpu_freq, percent_to_color
 
 PatternType = Union[re.Pattern, str]
 RouterType = Callable[[Route, Request], Any]
 TR = TypeVar("TR", bound=RouterType)
 TC = TypeVar("TC", bound=Callable[..., Any])
 
-RES_PATH = Path(__file__).parent / "res"
-ENVIRONMENT = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(str(TEMPLATE_PATH)),
-    autoescape=jinja2.select_autoescape(["html", "xml"]),
-    enable_async=True,
-)
+ROOT_PATH = Path(__file__).parent.parent
+RES_PATH = ROOT_PATH / "res"
+TEMPLATES_PATH = ROOT_PATH / "templates"
 ROUTE_URL = "http://picstatus.nonebot"
 
 
@@ -42,6 +39,7 @@ class RouterData:
 
 
 registered_routers: List[RouterData] = []
+global_jinja_filters: Dict[str, Callable] = {}
 
 
 def resolve_file_url(path: str, prefix: str = "") -> str:
@@ -56,12 +54,18 @@ def resolve_file_url(path: str, prefix: str = "") -> str:
     return f"/api/local_file?{params}"
 
 
-def jinja_filter(func: TC) -> TC:
-    name = func.__name__
-    if name in ENVIRONMENT.filters:
+def jinja_filter(func: TC, name: str = "") -> TC:
+    name = name or func.__name__
+    if name in global_jinja_filters:
         raise ValueError(f"Duplicate filter name `{name}`")
-    ENVIRONMENT.filters[name] = func
+    global_jinja_filters[name] = func
+    logger.debug(f"Registered global jinja filter `{name}`")
     return func
+
+
+def register_filter_to(env: jinja2.Environment):
+    for name, func in global_jinja_filters.items():
+        env.filters[name] = func
 
 
 def router(pattern: PatternType, priority: int = 0):
@@ -93,44 +97,16 @@ async def get_routed_page(**kwargs) -> AsyncIterator[Page]:
         yield page
 
 
-async def render_image(main_content: str) -> bytes:
-    html = await ENVIRONMENT.get_template("index.html.jinja").render_async(
-        main=main_content,
-        additional_css=[resolve_file_url(x, "css") for x in config.ps_additional_css],
-        additional_script=[
-            resolve_file_url(x, "js") for x in config.ps_additional_script
-        ],
-    )
-    if (p := (Path.cwd() / "picstatus-debug.html")).exists():
-        p.write_text(html, encoding="u8")
-    async with get_routed_page() as page:
-        await page.set_content(html)
-        await page.wait_for_selector("body.done")
-        elem = await page.query_selector(".main-background")
-        assert elem
-        return await elem.screenshot(type="jpeg")
-
-
-async def collect_and_render() -> bytes:
-    selected: List[ComponentType] = []
-    for name in config.ps_components:
-        if name not in components:
-            logger.warning(f"Component `{name}` not found")
-            continue
-        selected.append(components[name])
-
-    contents = await asyncio.gather(*(x() for x in selected))
-    main_html = "\n".join(contents)
-    return await render_image(main_html)
-
-
 def file_router(
     query_name: Optional[str] = None,
     base_path: Optional[Path] = None,
+    prefix_omit: str = "",
 ) -> RouterType:
     async def router(route: Route, request: Request):
         url = URL(request.url)
         query_path = url.query.get(query_name, "") if query_name else url.path[1:]
+        if prefix_omit and query_path.startswith(prefix_omit):
+            query_path = query_path[len(prefix_omit) :]
         path = anyio.Path((base_path / query_path) if base_path else query_path)
         logger.debug(f"Associated file `{path}`")
         if not await path.exists():
@@ -142,8 +118,13 @@ def file_router(
     return router
 
 
-jinja_filter(auto_convert_unit)
 jinja_filter(percent_to_color)
+jinja_filter(format_cpu_freq)
+
+
+@jinja_filter
+def auto_convert_unit(value: float, **kw) -> str:
+    return auto_convert_byte(value=value, with_space=False, **kw)
 
 
 @jinja_filter
@@ -162,10 +143,47 @@ async def _(route: Route, _: Request):
     await route.fulfill(body=data)
 
 
+@router(f"{ROUTE_URL}/api/bot_avatar/*")
+async def _(route: Route, request: Request):
+    url = URL(request.url)
+    self_id = url.parts[-1]
+
+    if self_id in bot_avatar_cache:
+        await route.fulfill(body=bot_avatar_cache[self_id])
+        return
+
+    if (self_id in bot_info_cache) and (avatar := bot_info_cache[self_id].user_avatar):
+        try:
+            img = await avatar.get_image()
+        except Exception as e:
+            logger.warning(
+                f"Error when getting bot avatar, fallback to default: "
+                f"{e.__class__.__name__}: {e}",
+            )
+        else:
+            bot_avatar_cache[self_id] = img
+            await route.fulfill(body=img)
+            return
+
+    data = (
+        config.ps_default_avatar
+        if config.ps_default_avatar.is_file()
+        else DEFAULT_AVATAR_PATH
+    ).read_bytes()
+    await route.fulfill(body=data)
+
+
 router(f"{ROUTE_URL}/api/local_file*")(
     file_router(query_name="path", base_path=None),
 )
 
-router(f"{ROUTE_URL}/**/*", priority=99)(
+for p in TEMPLATES_PATH.iterdir():
+    if not p.is_dir():
+        continue
+    router(f"{ROUTE_URL}/{p.name}/res/**/*", priority=99)(
+        file_router(query_name=None, base_path=p / "res", prefix_omit=f"{p.name}/res/"),
+    )
+
+router(f"{ROUTE_URL}/**/*", priority=100)(
     file_router(query_name=None, base_path=RES_PATH),
 )
