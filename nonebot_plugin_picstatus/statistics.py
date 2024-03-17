@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from nonebot import get_driver, logger
-from nonebot.adapters import Bot, Bot as BaseBot, Event, Event as BaseEvent
+from nonebot.adapters import Bot as BaseBot, Event as BaseEvent
 from nonebot.message import event_preprocessor
 from nonebot_plugin_userinfo import UserInfo, get_user_info
 
@@ -51,20 +51,30 @@ def method_is_send_msg(platform: str, name: str) -> bool:
     )
 
 
-@Bot.on_called_api
-async def called_api(
-    bot: Bot,
-    exc: Optional[Exception],
-    api: str,
-    _: Dict[str, Any],
-    __: Any,
-):
-    if (not exc) and method_is_send_msg(bot.adapter.get_name(), api):
-        send_num[bot.self_id] += 1
+if config.ps_count_message_sent_event:
+
+    @event_preprocessor
+    async def _(bot: BaseBot, event: BaseEvent):
+        if (event.get_type() == "message_sent") or (
+            event.get_type() == "message" and event.get_user_id() == bot.self_id
+        ):
+            send_num[bot.self_id] += 1
+else:
+
+    @BaseBot.on_called_api
+    async def called_api(
+        bot: BaseBot,
+        exc: Optional[Exception],
+        api: str,
+        _: Dict[str, Any],
+        __: Any,
+    ):
+        if (not exc) and method_is_send_msg(bot.adapter.get_name(), api):
+            send_num[bot.self_id] += 1
 
 
 @driver.on_bot_connect
-async def _(bot: Bot):
+async def _(bot: BaseBot):
     bot_connect_time[bot.self_id] = datetime.now().astimezone()
     if bot.self_id not in recv_num:
         recv_num[bot.self_id] = 0
@@ -73,7 +83,7 @@ async def _(bot: Bot):
 
 
 @driver.on_bot_disconnect
-async def _(bot: Bot):
+async def _(bot: BaseBot):
     bot_connect_time.pop(bot.self_id, None)
     if config.ps_disconnect_reset_counter:
         recv_num.pop(bot.self_id, None)
@@ -81,7 +91,7 @@ async def _(bot: Bot):
 
 
 @event_preprocessor
-async def _(bot: Bot, event: Event):
+async def _(bot: BaseBot, event: BaseEvent):
     if event.get_type() == "message":
         recv_num[bot.self_id] += 1
 

@@ -31,16 +31,12 @@ class ConfigModel(BaseModel):
     # endregion
 
     # region behavior
+    ps_template: str = "default"
     ps_command: List[str] = ["运行状态", "状态", "zt", "yxzt", "status"]
     ps_only_su: bool = False
     ps_need_at: bool = False
     ps_reply_target: bool = True
     ps_req_timeout: Optional[int] = 10
-    ps_collect_interval: int = 2
-    ps_default_collect_cache_size: int = 1
-    ps_collect_cache_size: Dict[str, int] = Field(default_factory=dict)
-    ps_template: str = "default"
-    ps_disconnect_reset_counter: bool = True
     # endregion
 
     # region style
@@ -50,11 +46,19 @@ class ConfigModel(BaseModel):
     ps_default_avatar: Path = DEFAULT_AVATAR_PATH
     # endregion
 
-    # region components
+    # region collectors
+    # region base
+    ps_collect_interval: int = 2
+    ps_default_collect_cache_size: int = 1
+    ps_collect_cache_size: Dict[str, int] = Field(default_factory=dict)
+    # endregion
+
     # region header
     ps_use_env_nick: bool = False
     ps_show_current_bot_only: bool = False
     ps_ob_v11_use_get_status: bool = True
+    ps_count_message_sent_event: bool = False
+    ps_disconnect_reset_counter: bool = True
     # endregion
 
     # region disk

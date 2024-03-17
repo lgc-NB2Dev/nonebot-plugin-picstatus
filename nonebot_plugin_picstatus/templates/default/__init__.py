@@ -22,7 +22,7 @@ register_global_filter_to(ENVIRONMENT)
 
 
 class TemplateConfig(BaseModel):
-    ps_components: List[str] = [
+    ps_default_components: List[str] = [
         "header",
         "cpu_mem",
         "disk",
@@ -30,8 +30,8 @@ class TemplateConfig(BaseModel):
         "process",
         "footer",
     ]
-    ps_additional_css: List[str] = []
-    ps_additional_script: List[str] = []
+    ps_default_additional_css: List[str] = []
+    ps_default_additional_script: List[str] = []
 
     @field_validator("ps_additional_css")
     def resolve_css_url(cls, v: List[str]):  # noqa: N805
@@ -48,6 +48,8 @@ async def render(collected: Dict[str, Any], config: TemplateConfig) -> bytes:
     }
     template = ENVIRONMENT.get_template("index.html.jinja")
     html = await template.render_async(d=collected, config=config)
+    if (p := Path.cwd() / "picstatus-debug.html").exists():
+        p.write_text(html, "u8")
     async with get_routed_page() as page:
         await page.set_content(html)
         await page.wait_for_selector("body.done")
