@@ -14,14 +14,6 @@ def match_list_regexp(reg_list: List[str], txt: str) -> Optional[re.Match]:
     return next((match for r in reg_list if (match := re.search(r, txt))), None)
 
 
-def percent_to_color(percent: float) -> str:
-    if percent < 70:
-        return "prog-low"
-    if percent < 90:
-        return "prog-medium"
-    return "prog-high"
-
-
 def format_cpu_freq(freq: "CpuFreq") -> str:
     cu = partial(auto_convert_byte, suffix="Hz", unit_index=2, with_space=False)
     if not freq.current:

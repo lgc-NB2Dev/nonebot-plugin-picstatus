@@ -11,13 +11,14 @@ require("nonebot_plugin_htmlrender")
 from . import __main__ as __main__, statistics as statistics
 from .collectors import enable_collectors, load_collectors
 from .config import ConfigModel, config
-from .templates import load_templates, loaded_templates
+from .templates import load_template
 
 load_collectors()
-load_templates()
-if config.ps_template not in loaded_templates:
-    raise ValueError(f"Template {config.ps_template} not found")
-enable_collectors(*loaded_templates[config.ps_template].collectors)
+try:
+    _template = load_template(config.ps_template)
+except ImportError as e:
+    raise ImportError(f"Cannot found template `{config.ps_template}`") from e
+enable_collectors(*_template.collectors)
 
 
 usage = f"指令：{' / '.join(config.ps_command)}"

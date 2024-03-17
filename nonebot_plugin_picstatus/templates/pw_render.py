@@ -18,7 +18,7 @@ from yarl import URL
 from ..bg_provider import get_bg
 from ..config import DEFAULT_AVATAR_PATH, config
 from ..statistics import bot_avatar_cache, bot_info_cache
-from ..util import format_cpu_freq, percent_to_color
+from ..util import format_cpu_freq
 
 PatternType = Union[re.Pattern, str]
 RouterType = Callable[[Route, Request], Any]
@@ -29,6 +29,9 @@ ROOT_PATH = Path(__file__).parent.parent
 RES_PATH = ROOT_PATH / "res"
 TEMPLATES_PATH = ROOT_PATH / "templates"
 ROUTE_URL = "http://picstatus.nonebot"
+RES_LOCATION_MAP = {
+    "": RES_PATH,
+}
 
 
 @dataclass
@@ -42,15 +45,18 @@ registered_routers: List[RouterData] = []
 global_jinja_filters: Dict[str, Callable] = {}
 
 
-def resolve_file_url(path: str, prefix: str = "") -> str:
-    if not prefix.startswith("/"):
-        prefix = f"/{prefix}"
-    if prefix.endswith("/"):
-        prefix = prefix[:-1]
-
+def resolve_file_url(
+    path: str,
+    additional_locations: Optional[Dict[str, Path]] = None,
+) -> str:
     if path.startswith("res:"):
-        return f"{prefix}/{path[4:]}"
-    params = urlencode({"path": f"{prefix}/{path}"})
+        path = path[4:].lstrip("/")
+        locations = {**RES_LOCATION_MAP, **(additional_locations or {})}
+        for pfx, loc in locations.items():
+            if (loc / path).exists():
+                return f"/{pfx}/{path}"
+        raise ValueError(f"Cannot resolve builtin resource `{path}`")
+    params = urlencode({"path": path})
     return f"/api/local_file?{params}"
 
 
@@ -63,7 +69,7 @@ def jinja_filter(func: TC, name: str = "") -> TC:
     return func
 
 
-def register_filter_to(env: jinja2.Environment):
+def register_global_filter_to(env: jinja2.Environment):
     for name, func in global_jinja_filters.items():
         env.filters[name] = func
 
@@ -118,8 +124,16 @@ def file_router(
     return router
 
 
-jinja_filter(percent_to_color)
 jinja_filter(format_cpu_freq)
+
+
+@jinja_filter
+def percent_to_color(percent: float) -> str:
+    if percent < 70:
+        return "prog-low"
+    if percent < 90:
+        return "prog-medium"
+    return "prog-high"
 
 
 @jinja_filter

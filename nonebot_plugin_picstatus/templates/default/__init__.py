@@ -3,18 +3,22 @@ from typing import Any, Dict, List
 
 import jinja2
 from cookit import SizedList
+from cookit.pyd import field_validator
 from pydantic import BaseModel
 
-from ..pw_render import get_routed_page, register_filter_to
+from ..pw_render import get_routed_page, register_global_filter_to, resolve_file_url
 
 collecting = "all"
 
-TEMPLATE_PATH = Path(__file__).parent / "res" / "templates"
+RES_PATH = Path(__file__).parent / "res"
+TEMPLATE_PATH = RES_PATH / "templates"
+CSS_PATH = RES_PATH / "css"
 ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(str(TEMPLATE_PATH)),
     autoescape=jinja2.select_autoescape(["html", "xml"]),
     enable_async=True,
 )
+register_global_filter_to(ENVIRONMENT)
 
 
 class TemplateConfig(BaseModel):
@@ -29,6 +33,14 @@ class TemplateConfig(BaseModel):
     ps_additional_css: List[str] = []
     ps_additional_script: List[str] = []
 
+    @field_validator("ps_additional_css")
+    def resolve_css_url(cls, v: List[str]):  # noqa: N805
+        return [resolve_file_url(x, {"default/res/css": CSS_PATH}) for x in v]
+
+    @field_validator("ps_additional_script")
+    def resolve_script_url(cls, v: List[str]):  # noqa: N805
+        return [resolve_file_url(x) for x in v]
+
 
 async def render(collected: Dict[str, Any], config: TemplateConfig) -> bytes:
     collected = {
@@ -42,6 +54,3 @@ async def render(collected: Dict[str, Any], config: TemplateConfig) -> bytes:
         elem = await page.query_selector(".main-background")
         assert elem
         return await elem.screenshot(type="jpeg")
-
-
-register_filter_to(ENVIRONMENT)

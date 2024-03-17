@@ -30,39 +30,39 @@ class TemplateInfo:
 loaded_templates: Dict[str, TemplateInfo] = {}
 
 
+def load_template(name: str):
+    module = importlib.import_module(f".{name}", __package__)
+    assert module
+
+    if (not hasattr(module, "render")) or (not callable(module.render)):
+        raise ValueError(f"Template {name} has wrong render function")
+    if (not hasattr(module, "collecting")) or (
+        (not isinstance(module.collecting, (list, tuple, set)))
+        and (module.collecting != "all")
+    ):
+        raise ValueError(f"Template {name} has wrong collectors declared")
+    if (not hasattr(module, "TemplateConfig")) or (
+        not issubclass(module.TemplateConfig, BaseModel)
+    ):
+        raise ValueError(f"Template {name} has wrong TemplateConfig declared")
+    template_info = TemplateInfo(
+        collectors=set(
+            registered_collectors if module.collecting == "all" else module.collecting,
+        ),
+        config=get_plugin_config(module.TemplateConfig),
+        renderer=module.render,
+    )
+    loaded_templates[name] = template_info
+    logger.debug(f"Loaded template {name} {template_info}")
+    return template_info
+
+
 def load_templates():
     for module in Path(__file__).parent.iterdir():
-        if not module.is_dir():
-            continue
-
         name = module.name
-        if name.startswith("_"):
-            return
-        module = importlib.import_module(f".{name}", __package__)
-        assert module
-
-        if (not hasattr(module, "render")) or (not callable(module.render)):
-            raise ValueError(f"Template {name} has wrong render function")
-        if (not hasattr(module, "collecting")) or (
-            (not isinstance(module.collecting, (list, tuple, set)))
-            and (module.collecting != "all")
-        ):
-            raise ValueError(f"Template {name} has wrong collectors declared")
-        if (not hasattr(module, "TemplateConfig")) or (
-            not issubclass(module.TemplateConfig, BaseModel)
-        ):
-            raise ValueError(f"Template {name} has wrong TemplateConfig declared")
-        template_info = TemplateInfo(
-            collectors=set(
-                registered_collectors
-                if module.collecting == "all"
-                else module.collecting,
-            ),
-            config=get_plugin_config(module.TemplateConfig),
-            renderer=module.render,
-        )
-        loaded_templates[name] = template_info
-        logger.debug(f"Loaded template {name} {template_info}")
+        if (not module.is_dir()) or name.startswith("_"):
+            continue
+        load_template(name)
 
 
 async def render_current_template():
