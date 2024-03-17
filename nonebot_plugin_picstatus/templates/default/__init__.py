@@ -33,11 +33,11 @@ class TemplateConfig(BaseModel):
     ps_default_additional_css: List[str] = []
     ps_default_additional_script: List[str] = []
 
-    @field_validator("ps_additional_css")
+    @field_validator("ps_default_additional_css")
     def resolve_css_url(cls, v: List[str]):  # noqa: N805
         return [resolve_file_url(x, {"default/res/css": CSS_PATH}) for x in v]
 
-    @field_validator("ps_additional_script")
+    @field_validator("ps_default_additional_script")
     def resolve_script_url(cls, v: List[str]):  # noqa: N805
         return [resolve_file_url(x) for x in v]
 
