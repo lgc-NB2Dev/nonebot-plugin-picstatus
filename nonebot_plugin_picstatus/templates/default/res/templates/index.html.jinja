@@ -7,7 +7,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="/default/res/css/index.css" />
-  {% for css in config.ps_additional_css -%}
+  {% for css in config.ps_default_additional_css -%}
   <link rel="stylesheet" href="{{ css }}" />{% endfor %}
 </head>
 
@@ -15,7 +15,7 @@
   <div class="main-background" data-background-image="/api/background">
     <div class="main-background-mask">
       <div class="main">
-        {% for name in config.ps_components %}
+        {% for name in config.ps_default_components %}
         {% if name == "header" %}
         {{ header(d) }}
         {% elif name == "cpu_mem" %}
@@ -37,7 +37,7 @@
 
 <script src="/js/init-global.js"></script>
 <script src="/js/lazy-load.js"></script>
-{% for script in config.ps_additional_script -%}
+{% for script in config.ps_default_additional_script -%}
 <script src="{{ script }}"></script>{% endfor %}
 <script src="/js/load-plugin.js"></script>
 
