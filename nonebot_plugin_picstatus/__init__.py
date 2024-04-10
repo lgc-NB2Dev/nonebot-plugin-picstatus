@@ -27,7 +27,7 @@ if config.ps_need_at:
 if config.ps_only_su:
     usage += "\n注意：仅SuperUser可以使用此指令"
 
-__version__ = "2.0.0.post2"
+__version__ = "2.0.0.post3"
 __plugin_meta__ = PluginMetadata(
     name="PicStatus",
     description="以图片形式显示当前设备的运行状态",
@@ -35,6 +35,9 @@ __plugin_meta__ = PluginMetadata(
     type="application",
     homepage="https://github.com/lgc-NB2Dev/nonebot-plugin-picstatus",
     config=ConfigModel,
-    supported_adapters=inherit_supported_adapters("nonebot_plugin_alconna"),
+    supported_adapters=inherit_supported_adapters(
+        "nonebot_plugin_alconna",
+        "nonebot_plugin_userinfo",
+    ),
     extra={"License": "MIT", "Author": "student_2333"},
 )
