@@ -46,12 +46,16 @@ async def gm():
         proxies=config.proxy,
         timeout=config.ps_req_timeout,
     ) as cli:
-        url = (
-            (await cli.get("https://api.gumengya.com/Api/DmImg"))
+        return (
+            (
+                await cli.get(
+                    "https://api.gumengya.com/Api/DmImg",
+                    params={"format": "image"},
+                )
+            )
             .raise_for_status()
-            .json()["data"]["url"]
+            .content
         )
-        return (await cli.get(url)).raise_for_status().content
 
 
 @bg_provider
