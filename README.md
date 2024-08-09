@@ -1,16 +1,14 @@
 <!-- markdownlint-disable MD033 MD036 MD041 -->
 
 <div align="center">
-  <a href="https://v2.nonebot.dev/store">
-    <img src="https://raw.githubusercontent.com/A-kirami/nonebot-plugin-template/resources/nbp_logo.png" width="180" height="180" alt="logo">
-  </a>
-  <br>
-  <p>
-    <img src="https://raw.githubusercontent.com/A-kirami/nonebot-plugin-template/resources/NoneBotPlugin.svg" width="240" alt="logo">
-  </p>
-</div>
 
-<div align="center">
+<a href="https://v2.nonebot.dev/store">
+  <img src="https://raw.githubusercontent.com/A-kirami/nonebot-plugin-template/resources/nbp_logo.png" width="180" height="180" alt="NoneBotPluginLogo">
+</a>
+
+<p>
+  <img src="https://raw.githubusercontent.com/lgc-NB2Dev/readme/main/template/plugin.svg" alt="NoneBotPluginText">
+</p>
 
 # NoneBot-Plugin-PicStatus
 
@@ -37,6 +35,15 @@ _✨ 运行状态图片版 for NoneBot2 ✨_
 </a>
 <a href="https://pypi.python.org/pypi/nonebot-plugin-picstatus">
   <img src="https://img.shields.io/pypi/dm/nonebot-plugin-picstatus" alt="pypi download">
+</a>
+
+<br />
+
+<a href="https://registry.nonebot.dev/plugin/nonebot-plugin-picstatus:nonebot_plugin_picstatus">
+  <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fnbbdg.lgc2333.top%2Fplugin%2Fnonebot-plugin-picstatus" alt="NoneBot Registry">
+</a>
+<a href="https://registry.nonebot.dev/plugin/nonebot-plugin-picstatus:nonebot_plugin_picstatus">
+  <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fnbbdg.lgc2333.top%2Fplugin-adapters%2Fnonebot-plugin-picstatus" alt="Supported Adapters">
 </a>
 
 </div>
