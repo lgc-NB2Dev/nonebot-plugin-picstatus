@@ -129,6 +129,12 @@ plugins = [
 
 ### 见 [.env.example](https://github.com/lgc2333/nonebot-plugin-picstatus/blob/master/.env.example)
 
+## 🎨 扩展
+
+想知道如何为插件新增数据源、图片模板与背景图来源的话，请参考下方示例
+
+### 见 [examples/external_example](https://github.com/lgc-NB2Dev/nonebot-plugin-picstatus/tree/master/examples/external_example)
+
 ## 🎉 使用
 
 使用指令 `运行状态`（或者 `状态` / `zt` / `yxzt` / `status`，可修改）来触发插件功能  
