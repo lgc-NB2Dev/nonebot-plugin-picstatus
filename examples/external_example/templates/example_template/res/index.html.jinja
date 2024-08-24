@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      main {
+        background: linear-gradient(to bottom right, #159957, #155799);
+        width: 600px;
+        font-family: sans-serif;
+      }
+
+      pre,
+      code {
+        font-family: monospace;
+      }
+
+      .box {
+        padding: 20px;
+        background-color: #fff8;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div style="padding: 20px">
+        <div class="box">
+          <div style="text-align: center">
+            <h1>Example Template</h1>
+            <p>This is an example status picture template.</p>
+          </div>
+          <div style="margin: auto; width: fit-content">
+            <pre><code>d = {{ d | json_dumps(indent=2) }}</code></pre>
+            <pre><code>config = {{ config.model_dump_json(indent=2) }}</code></pre>
+          </div>
+          <div style="text-align: center">
+            <!-- 使用 router 获取背景图 -->
+            <img src="/api/background" style="max-width: 300px; height: auto" />
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

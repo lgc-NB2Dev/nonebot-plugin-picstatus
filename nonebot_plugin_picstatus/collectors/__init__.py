@@ -24,6 +24,8 @@ from nonebot_plugin_apscheduler import scheduler
 from ..config import config
 
 T = TypeVar("T")
+TI = TypeVar("TI")
+TR = TypeVar("TR")
 TC = TypeVar("TC", bound="Collector")
 TCF = TypeVar("TCF", bound=Callable[[], Awaitable[Any]])
 R = TypeVar("R")
@@ -35,24 +37,29 @@ class SkipCollectError(Exception):
     pass
 
 
-class Collector(Generic[T]):
+class Collector(Generic[TI, TR]):
     @abstractmethod
-    async def _get(self) -> T: ...
+    async def _get(self) -> TI: ...
 
+    @abstractmethod
+    async def get(self) -> TR: ...
+
+
+class BaseNormalCollector(Collector[T, T], Generic[T]):
+    def __init__(self) -> None:
+        super().__init__()
+
+    @override
     async def get(self) -> T:
         return await self._get()
 
 
-class BaseNormalCollector(Collector[T], Generic[T]):
-    def __init__(self) -> None:
-        super().__init__()
-
-
-class BaseFirstTimeCollector(Collector[T], Generic[T]):
+class BaseFirstTimeCollector(Collector[T, T], Generic[T]):
     def __init__(self) -> None:
         super().__init__()
         self._cached: Union[T, Undefined] = Undefined()
 
+    @override
     async def get(self) -> T:
         if not isinstance(self._cached, Undefined):
             return self._cached
@@ -61,21 +68,18 @@ class BaseFirstTimeCollector(Collector[T], Generic[T]):
         return data
 
 
-class BasePeriodicCollector(Collector[Deque[T]], Generic[T]):
+class BasePeriodicCollector(Collector[T, Deque[T]], Generic[T]):
     def __init__(self, size: int = config.ps_default_collect_cache_size) -> None:
         super().__init__()
         self.data = deque(maxlen=size)
 
     @override
-    async def _get(self) -> Deque[T]:
+    async def get(self) -> Deque[T]:
         return self.data
-
-    @abstractmethod
-    async def _do_collect(self) -> T: ...
 
     async def collect(self):
         try:
-            data = await self._do_collect()
+            data = await self._get()
         except SkipCollectError:
             return
         except Exception:
@@ -157,7 +161,7 @@ class TimeBasedCounterCollector(BasePeriodicCollector[R], Generic[T, R]):
     async def _get_obj(self) -> T: ...
 
     @override
-    async def _do_collect(self) -> R:
+    async def _get(self) -> R:
         past = self.last_obj
         past_time = self.last_time
         time_now = time.time()

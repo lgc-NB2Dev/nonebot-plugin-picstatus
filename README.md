@@ -156,7 +156,7 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 - HTML 渲染方案
 
-### [故梦 API](https://api.gumengya.com) & [LoliApi](https://docs.loliapi.com/) & [Lolicon API](https://api.lolicon.app/)
+### [LoliApi](https://docs.loliapi.com/) & [Lolicon API](https://api.lolicon.app/)
 
 - 背景图来源
 

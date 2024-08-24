@@ -68,7 +68,7 @@ if config.ps_count_message_sent_event:
                 )
             )
         ):
-            logger.debug(f"Bot {bot.self_id} sent counter +1")
+            # logger.debug(f"Bot {bot.self_id} sent counter +1")
             send_num[bot.self_id] += 1
 
 
@@ -91,7 +91,7 @@ if config.ps_count_message_sent_event is not True:
             )
             and method_is_send_msg(bot.adapter.get_name(), api)
         ):
-            logger.debug(f"Bot {bot.self_id} sent counter +1")
+            # logger.debug(f"Bot {bot.self_id} sent counter +1")
             send_num[bot.self_id] += 1
 
 
