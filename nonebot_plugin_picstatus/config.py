@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Set
+from typing import Dict, List, Literal, Optional, Set, Union
 
 from nonebot import get_plugin_config
 from nonebot.compat import type_validate_python
@@ -40,7 +40,8 @@ class ConfigModel(BaseModel):
     # endregion
 
     # region style
-    ps_bg_provider: str = "gm"
+    ps_bg_provider: str = "loli"
+    ps_bg_preload_count: int = 1
     ps_bg_lolicon_r18_type: Literal[0, 1, 2] = 0
     ps_bg_local_path: Path = DEFAULT_BG_PATH
     ps_default_avatar: Path = DEFAULT_AVATAR_PATH
@@ -57,7 +58,7 @@ class ConfigModel(BaseModel):
     ps_use_env_nick: bool = False
     ps_show_current_bot_only: bool = False
     ps_ob_v11_use_get_status: bool = True
-    ps_count_message_sent_event: bool = False
+    ps_count_message_sent_event: Union[bool, Set[str]] = False
     ps_disconnect_reset_counter: bool = True
     # endregion
 

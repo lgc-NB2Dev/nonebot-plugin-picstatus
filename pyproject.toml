@@ -4,12 +4,12 @@ dynamic = ["version"]
 description = "A NoneBot2 plugin generates a picture which shows the status of current device"
 authors = [{ name = "student_2333", email = "lgc2333@126.com" }]
 dependencies = [
-    "nonebot2>=2.3.1",
+    "nonebot2>=2.3.3",
     "nonebot-plugin-apscheduler>=0.5.0",
-    "nonebot-plugin-alconna>=0.48.0",
-    "nonebot-plugin-userinfo>=0.2.4",
-    "nonebot-plugin-htmlrender>=0.3.2",
-    "cookit[pydantic]>=0.6.5",
+    "nonebot-plugin-alconna>=0.52.0",
+    "nonebot-plugin-userinfo>=0.2.5",
+    "nonebot-plugin-htmlrender>=0.3.5",
+    "cookit[loguru,jinja,playwright,pydantic]>=0.8.0",
     "psutil>=6.0.0",
     "py-cpuinfo>=9.0.0",
     "anyio>=4.4.0",

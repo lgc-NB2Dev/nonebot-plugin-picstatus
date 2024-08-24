@@ -8,7 +8,7 @@ from typing import Dict, Optional, Tuple, Union
 import nonebot
 import psutil
 
-from ..statistics import nonebot_run_time
+from ..misc_statistics import nonebot_run_time
 from ..util import format_time_delta_ps
 from . import first_time_collector, normal_collector, periodic_collector
 

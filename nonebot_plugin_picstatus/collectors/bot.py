@@ -1,14 +1,14 @@
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 from nonebot import get_bots, logger
 from nonebot.adapters import Bot as BaseBot
 from nonebot.matcher import current_bot
 
 from ..config import config
-from ..statistics import (
+from ..misc_statistics import (
     bot_connect_time,
     bot_info_cache,
     recv_num,
@@ -85,7 +85,7 @@ async def get_bot_status(bot: BaseBot, now_time: datetime) -> BotStatus:
 
 
 @normal_collector()
-async def bots():
+async def bots() -> List[BotStatus]:
     now_time = datetime.now().astimezone()
     return (
         [await get_bot_status(current_bot.get(), now_time)]

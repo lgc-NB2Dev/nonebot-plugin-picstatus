@@ -1,14 +1,22 @@
+import asyncio as aio
+import mimetypes
 import random
 from pathlib import Path
-from typing import Awaitable, Callable, Dict, List, TypeVar
+from typing import Awaitable, Callable, Dict, List, NamedTuple, Optional, TypeVar
 
 import anyio
-from httpx import AsyncClient
+from httpx import AsyncClient, Response
 from nonebot import logger
 
 from .config import DEFAULT_BG_PATH, config
 
-BGProviderType = Callable[[], Awaitable[bytes]]
+
+class BgData(NamedTuple):
+    data: bytes
+    mime: str
+
+
+BGProviderType = Callable[[], Awaitable[BgData]]
 TBP = TypeVar("TBP", bound=BGProviderType)
 
 registered_bg_providers: Dict[str, BGProviderType] = {}
@@ -31,48 +39,37 @@ def get_bg_files() -> List[Path]:
 BG_FILES = get_bg_files()
 
 
-def bg_provider(func: TBP) -> TBP:
-    name = func.__name__
-    if name in registered_bg_providers:
-        raise ValueError(f"Duplicate bg provider name `{name}`")
-    registered_bg_providers[name] = func
-    return func
+def bg_provider(name: Optional[str] = None):
+    def deco(func: TBP) -> TBP:
+        provider_name = name or func.__name__
+        if provider_name in registered_bg_providers:
+            raise ValueError(f"Duplicate bg provider name `{provider_name}`")
+        registered_bg_providers[provider_name] = func
+        return func
+
+    return deco
 
 
-@bg_provider
-async def gm():
-    async with AsyncClient(
-        follow_redirects=True,
-        proxies=config.proxy,
-        timeout=config.ps_req_timeout,
-    ) as cli:
-        return (
-            (
-                await cli.get(
-                    "https://api.gumengya.com/Api/DmImg",
-                    params={"format": "image"},
-                )
-            )
-            .raise_for_status()
-            .content
-        )
+def resp_to_bg_data(resp: Response):
+    return BgData(
+        resp.content,
+        (resp.headers.get("Content-Type") or "application/octet-stream"),
+    )
 
 
-@bg_provider
+@bg_provider()
 async def loli():
     async with AsyncClient(
         follow_redirects=True,
         proxies=config.proxy,
         timeout=config.ps_req_timeout,
     ) as cli:
-        return (
-            (await cli.get("https://www.loliapi.com/acg/pe/"))
-            .raise_for_status()
-            .content
+        return resp_to_bg_data(
+            (await cli.get("https://www.loliapi.com/acg/pe/")).raise_for_status(),
         )
 
 
-@bg_provider
+@bg_provider()
 async def lolicon():
     async with AsyncClient(
         follow_redirects=True,
@@ -100,22 +97,25 @@ async def lolicon():
                 "Referer": "https://www.pixiv.net/",
             },
         )
-        return resp.raise_for_status().content
+        return resp_to_bg_data(resp)
 
 
-@bg_provider
+@bg_provider()
 async def local():
     file = random.choice(BG_FILES)
     logger.debug(f"Choice background file `{file}`")
-    return await anyio.Path(file).read_bytes()
+    return BgData(
+        await anyio.Path(file).read_bytes(),
+        mimetypes.guess_type(file)[0] or "application/octet-stream",
+    )
 
 
-@bg_provider
+@bg_provider()
 async def none():
-    return b""
+    return BgData(b"", "application/octet-stream")
 
 
-async def get_bg():
+async def fetch_bg() -> BgData:
     if config.ps_bg_provider in registered_bg_providers:
         try:
             return await registered_bg_providers[config.ps_bg_provider]()
@@ -126,3 +126,70 @@ async def get_bg():
             f"Unknown background provider `{config.ps_bg_provider}`, fallback to local",
         )
     return await local()
+
+
+class BgPreloader:
+    def __init__(self, preload_count: int):
+        if preload_count < 1:
+            raise ValueError("preload_count must be greater than 0")
+        self.preload_count = preload_count
+        self.backgrounds: List[BgData] = []
+        self.tasks: List[aio.Task[None]] = []
+        self.task_signal = aio.Future[None]()
+        self.signal_wait_lock = aio.Lock()
+
+    def create_preload_task(self):
+        async def task_func():
+            logger.debug("Started a preload background task")
+            try:
+                bg = await fetch_bg()
+            except Exception as e:
+                # fetch_bg has fallback so it should ensure we can get a bg
+                # if error occurred this should be an unexpected error
+                # need to let this error raise
+                logger.opt(exception=e).debug("Exception when preloading")
+                if not self.task_signal.done():
+                    self.task_signal.set_exception(e)
+            else:
+                logger.debug("A preload task done")
+                self.backgrounds.append(bg)
+                if not self.task_signal.done():
+                    self.task_signal.set_result(None)
+            finally:
+                self.tasks.remove(task)
+
+        task = aio.create_task(task_func())
+        self.tasks.append(task)
+
+    def start_preload(self, create_when_full: bool = False):
+        task_count = self.preload_count - len(self.backgrounds) - len(self.tasks)
+        if task_count <= 0:
+            if not create_when_full:
+                return
+            task_count = 1
+        logger.debug(f"Will preload {task_count} backgrounds")
+        for _ in range(task_count):
+            self.create_preload_task()
+
+    async def wait_signal(self):
+        async def inner():
+            async with self.signal_wait_lock:
+                if self.task_signal.done():
+                    self.task_signal = aio.Future()
+                await self.task_signal
+
+        return await aio.wait_for(inner(), timeout=15)
+
+    async def get(self) -> BgData:
+        if not self.backgrounds:
+            self.start_preload(create_when_full=True)
+            if self.tasks:
+                await self.wait_signal()
+            if not self.backgrounds:
+                raise RuntimeError("Failed to wait background")
+        bg = self.backgrounds.pop(0)
+        self.start_preload()
+        return bg
+
+
+bg_preloader = BgPreloader(config.ps_bg_preload_count)

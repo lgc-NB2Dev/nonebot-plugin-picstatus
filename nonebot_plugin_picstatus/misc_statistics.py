@@ -55,11 +55,24 @@ if config.ps_count_message_sent_event:
 
     @event_preprocessor
     async def _(bot: BaseBot, event: BaseEvent):
-        if (event.get_type() == "message_sent") or (
-            event.get_type() == "message" and event.get_user_id() == bot.self_id
+        if (
+            config.ps_count_message_sent_event
+            and (
+                (config.ps_count_message_sent_event is True)
+                or bot.adapter.get_name() in config.ps_count_message_sent_event
+            )
+            and (
+                (event.get_type() == "message_sent")
+                or (
+                    event.get_type() == "message" and event.get_user_id() == bot.self_id
+                )
+            )
         ):
+            logger.debug(f"Bot {bot.self_id} sent counter +1")
             send_num[bot.self_id] += 1
-else:
+
+
+if config.ps_count_message_sent_event is not True:
 
     @BaseBot.on_called_api
     async def called_api(
@@ -69,7 +82,16 @@ else:
         _: Dict[str, Any],
         __: Any,
     ):
-        if (not exc) and method_is_send_msg(bot.adapter.get_name(), api):
+        if (
+            (not exc)
+            and (config.ps_count_message_sent_event is not True)
+            and (
+                (config.ps_count_message_sent_event is False)
+                or (bot.adapter.get_name() not in config.ps_count_message_sent_event)
+            )
+            and method_is_send_msg(bot.adapter.get_name(), api)
+        ):
+            logger.debug(f"Bot {bot.self_id} sent counter +1")
             send_num[bot.self_id] += 1
 
 

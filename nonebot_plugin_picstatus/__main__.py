@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import suppress
 
 from nonebot import logger, on_command
@@ -7,8 +8,10 @@ from nonebot.permission import SUPERUSER
 from nonebot.rule import Rule, to_me
 from nonebot_plugin_alconna.uniseg import UniMessage
 
+from .bg_provider import bg_preloader
+from .collectors import collect_all
 from .config import config
-from .statistics import cache_bot_info
+from .misc_statistics import cache_bot_info
 from .templates import render_current_template
 
 
@@ -37,7 +40,11 @@ async def _(bot: BaseBot, event: BaseEvent):
     with suppress(Exception):
         await cache_bot_info(bot, event)
     try:
-        ret = await render_current_template()
+        bg, collected = await asyncio.gather(
+            bg_preloader.get(),
+            collect_all(),
+        )
+        ret = await render_current_template(collected=collected, bg=bg)
     except Exception:
         logger.exception("获取运行状态图失败")
         await UniMessage("获取运行状态图片失败，请检查后台输出").send(

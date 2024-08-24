@@ -1,14 +1,29 @@
+from collections import deque
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Literal
 
 import jinja2
-from cookit import SizedList
+from cookit import flatten
 from cookit.pyd import field_validator
+from nonebot import get_plugin_config, require
 from pydantic import BaseModel
 
-from ..pw_render import get_routed_page, register_global_filter_to, resolve_file_url
+from ...bg_provider import BgData
+from ...debug import is_debug_mode, write_debug_file
+from .. import pic_template
+from ..pw_render import (
+    ROUTE_URL,
+    add_background_router,
+    add_root_router,
+    base_router_group,
+    make_file_router,
+    register_global_filter_to,
+    resolve_file_url,
+)
 
-collecting = "all"
+require("nonebot_plugin_htmlrender")
+
+from nonebot_plugin_htmlrender import get_new_page  # noqa: E402
 
 RES_PATH = Path(__file__).parent / "res"
 TEMPLATE_PATH = RES_PATH / "templates"
@@ -19,6 +34,34 @@ ENVIRONMENT = jinja2.Environment(
     enable_async=True,
 )
 register_global_filter_to(ENVIRONMENT)
+
+template_router_group = base_router_group.copy()
+template_router_group.router(f"{ROUTE_URL}/default/res/**/*", priority=99)(
+    make_file_router(query_name=None, base_path=RES_PATH, prefix_omit="default/res/"),
+)
+
+COMPONENT_COLLECTORS = {
+    "header": {"bots", "nonebot_run_time", "system_run_time"},
+    "cpu_mem": {
+        "cpu_percent",
+        "cpu_count",
+        "cpu_count_logical",
+        "cpu_freq",
+        "cpu_brand",
+        "memory_stat",
+        "swap_stat",
+    },
+    "disk": {"disk_usage", "disk_io"},
+    "network": {"network_io", "network_connection"},
+    "process": {"process_status"},
+    "footer": {
+        "nonebot_version",
+        "ps_version",
+        "time",
+        "python_version",
+        "system_name",
+    },
+}
 
 
 class TemplateConfig(BaseModel):
@@ -32,6 +75,7 @@ class TemplateConfig(BaseModel):
     ]
     ps_default_additional_css: List[str] = []
     ps_default_additional_script: List[str] = []
+    ps_default_pic_format: Literal["jpeg", "png"] = "jpeg"
 
     @field_validator("ps_default_additional_css")
     def resolve_css_url(cls, v: List[str]):  # noqa: N805
@@ -42,16 +86,30 @@ class TemplateConfig(BaseModel):
         return [resolve_file_url(x) for x in v]
 
 
-async def render(collected: Dict[str, Any], config: TemplateConfig) -> bytes:
+template_config = get_plugin_config(TemplateConfig)
+collecting = set(
+    flatten(COMPONENT_COLLECTORS[k] for k in template_config.ps_default_components),
+)
+
+
+@pic_template(collecting=collecting)
+async def default(collected: Dict[str, Any], bg: BgData, **_) -> bytes:
     collected = {
-        k: v[0] if isinstance(v, SizedList) else v for k, v in collected.items()
+        k: v[0] if isinstance(v, deque) else v for k, v in collected.items()
     }
     template = ENVIRONMENT.get_template("index.html.jinja")
-    html = await template.render_async(d=collected, config=config)
-    if (p := Path.cwd() / "picstatus-debug.html").exists():
-        p.write_text(html, "u8")
-    async with get_routed_page() as page:
-        await page.set_content(html)
+    html = await template.render_async(d=collected, config=template_config)
+
+    if is_debug_mode():
+        write_debug_file("default_{time}.html", html)
+
+    router_group = template_router_group.copy()
+    add_root_router(router_group, html)
+    add_background_router(router_group, bg)
+
+    async with get_new_page() as page:
+        await router_group.apply(page)
+        await page.goto(f"{ROUTE_URL}/")
         await page.wait_for_selector("body.done")
         elem = await page.query_selector(".main-background")
         assert elem

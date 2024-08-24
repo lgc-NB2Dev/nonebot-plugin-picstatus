@@ -2,11 +2,13 @@ import asyncio
 import importlib
 import time
 from abc import abstractmethod
+from collections import deque
 from pathlib import Path
 from typing import (
     Any,
     Awaitable,
     Callable,
+    Deque,
     Dict,
     Generic,
     Optional,
@@ -16,8 +18,7 @@ from typing import (
 )
 from typing_extensions import override
 
-from cookit import SizedList
-from nonebot import get_driver, logger
+from nonebot import logger
 from nonebot_plugin_apscheduler import scheduler
 
 from ..config import config
@@ -42,12 +43,12 @@ class Collector(Generic[T]):
         return await self._get()
 
 
-class BaseNormalCollector(Generic[T], Collector[T]):
+class BaseNormalCollector(Collector[T], Generic[T]):
     def __init__(self) -> None:
         super().__init__()
 
 
-class BaseFirstTimeCollector(Generic[T], Collector[T]):
+class BaseFirstTimeCollector(Collector[T], Generic[T]):
     def __init__(self) -> None:
         super().__init__()
         self._cached: Union[T, Undefined] = Undefined()
@@ -60,13 +61,13 @@ class BaseFirstTimeCollector(Generic[T], Collector[T]):
         return data
 
 
-class BasePeriodicCollector(Generic[T], Collector[SizedList[T]]):
+class BasePeriodicCollector(Collector[Deque[T]], Generic[T]):
     def __init__(self, size: int = config.ps_default_collect_cache_size) -> None:
         super().__init__()
-        self.data = SizedList[T](size=size)
+        self.data = deque(maxlen=size)
 
     @override
-    async def _get(self) -> SizedList[T]:
+    async def _get(self) -> Deque[T]:
         return self.data
 
     @abstractmethod
@@ -109,9 +110,10 @@ def enable_collector(name: str):
     enabled_collectors[name] = instance
 
 
-def enable_collectors(*names: str):
+async def enable_collectors(*names: str):
     for name in names:
         enable_collector(name)
+    await init_first_time_collectors()
 
 
 def functional_collector(cls: Type[Collector], name: Optional[str] = None):
@@ -142,7 +144,7 @@ def periodic_collector(name: Optional[str] = None):
     return functional_collector(BasePeriodicCollector, name)
 
 
-class TimeBasedCounterCollector(Generic[T, R], BasePeriodicCollector[R]):
+class TimeBasedCounterCollector(BasePeriodicCollector[R], Generic[T, R]):
     def __init__(self, size: int = config.ps_default_collect_cache_size) -> None:
         super().__init__(size)
         self.last_obj: Union[Undefined, T] = Undefined()
@@ -176,17 +178,13 @@ async def collect_all() -> Dict[str, Any]:
     return dict(res)
 
 
-def load_collectors():
+def load_builtin_collectors():
     for module in Path(__file__).parent.iterdir():
         if not module.name.startswith("_"):
             importlib.import_module(f".{module.stem}", __package__)
 
 
-driver = get_driver()
-
-
-@driver.on_startup
-async def _():
+async def init_first_time_collectors():
     await asyncio.gather(
         *(
             x.get()

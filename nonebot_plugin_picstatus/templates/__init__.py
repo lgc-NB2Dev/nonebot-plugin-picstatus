@@ -1,69 +1,62 @@
 import importlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Awaitable, Dict, Generic, Set, TypeVar
-from typing_extensions import Protocol
+from typing import Any, Awaitable, Dict, Optional, Set, TypedDict
+from typing_extensions import Protocol, Unpack
 
-from nonebot import get_plugin_config, logger
-from pydantic import BaseModel
+from nonebot import logger
 
-from ..collectors import collect_all, registered_collectors
+from ..bg_provider import BgData
 from ..config import config
 
-TM = TypeVar("TM", bound=BaseModel, contravariant=True)
+
+class TemplateRendererKwargs(TypedDict):
+    collected: Dict[str, Any]
+    bg: BgData
 
 
-class TemplateRenderer(Generic[TM], Protocol):
-    def __call__(self, collected: Dict[str, Any], config: TM) -> Awaitable[bytes]: ...
+class TemplateRenderer(Protocol):
+    __name__: str
+
+    def __call__(
+        self,
+        **kwargs: Unpack[TemplateRendererKwargs],
+    ) -> Awaitable[bytes]: ...
 
 
 @dataclass()
 class TemplateInfo:
-    collectors: Set[str]
-    config: BaseModel
     renderer: TemplateRenderer
-
-    async def __call__(self):
-        return await self.renderer(await collect_all(), self.config)
+    collectors: Optional[Set[str]] = None
 
 
 loaded_templates: Dict[str, TemplateInfo] = {}
 
 
-def load_template(name: str):
-    module = importlib.import_module(f".{name}", __package__)
-    assert module
+def pic_template(
+    name: Optional[str] = None,
+    collecting: Optional[Set[str]] = None,
+):
+    def deco(func: TemplateRenderer):
+        template_name = name or func.__name__
+        if template_name in loaded_templates:
+            raise ValueError(f"Template {template_name} already exists")
+        loaded_templates[template_name] = TemplateInfo(
+            renderer=func,
+            collectors=collecting,
+        )
+        logger.debug(f"Registered template {template_name}")
 
-    if (not hasattr(module, "render")) or (not callable(module.render)):
-        raise ValueError(f"Template {name} has wrong render function")
-    if (not hasattr(module, "collecting")) or (
-        (not isinstance(module.collecting, (list, tuple, set)))
-        and (module.collecting != "all")
-    ):
-        raise ValueError(f"Template {name} has wrong collectors declared")
-    if (not hasattr(module, "TemplateConfig")) or (
-        not issubclass(module.TemplateConfig, BaseModel)
-    ):
-        raise ValueError(f"Template {name} has wrong TemplateConfig declared")
-    template_info = TemplateInfo(
-        collectors=set(
-            registered_collectors if module.collecting == "all" else module.collecting,
-        ),
-        config=get_plugin_config(module.TemplateConfig),
-        renderer=module.render,
-    )
-    loaded_templates[name] = template_info
-    logger.debug(f"Loaded template {name} {template_info}")
-    return template_info
+    return deco
 
 
-def load_templates():
+def load_builtin_templates():
     for module in Path(__file__).parent.iterdir():
         name = module.name
         if (not module.is_dir()) or name.startswith("_"):
             continue
-        load_template(name)
+        assert importlib.import_module(f".{name}", __package__)
 
 
-async def render_current_template():
-    return await loaded_templates[config.ps_template]()
+async def render_current_template(**kwargs: Unpack[TemplateRendererKwargs]):
+    return await loaded_templates[config.ps_template].renderer(**kwargs)
