@@ -135,8 +135,20 @@ class BgPreloader:
         self.preload_count = preload_count
         self.backgrounds: List[BgData] = []
         self.tasks: List[aio.Task[None]] = []
-        self.task_signal = aio.Future[None]()
+        self.task_signal: Optional[aio.Future[None]] = None
         self.signal_wait_lock = aio.Lock()
+
+    def _get_signal(self) -> aio.Future[None]:
+        if (not self.task_signal) or self.task_signal.done():
+            self.task_signal = aio.Future()
+        return self.task_signal
+
+    def _wait_signal(self):
+        async def inner():
+            async with self.signal_wait_lock:
+                await self._get_signal()
+
+        return aio.wait_for(inner(), timeout=15)
 
     def create_preload_task(self):
         async def task_func():
@@ -148,13 +160,13 @@ class BgPreloader:
                 # if error occurred this should be an unexpected error
                 # need to let this error raise
                 logger.opt(exception=e).debug("Exception when preloading")
-                if not self.task_signal.done():
-                    self.task_signal.set_exception(e)
+                if not (s := self._get_signal()).done():
+                    s.set_exception(e)
             else:
                 logger.debug("A preload task done")
                 self.backgrounds.append(bg)
-                if not self.task_signal.done():
-                    self.task_signal.set_result(None)
+                if not (s := self._get_signal()).done():
+                    s.set_result(None)
             finally:
                 self.tasks.remove(task)
 
@@ -171,20 +183,11 @@ class BgPreloader:
         for _ in range(task_count):
             self.create_preload_task()
 
-    async def wait_signal(self):
-        async def inner():
-            async with self.signal_wait_lock:
-                if self.task_signal.done():
-                    self.task_signal = aio.Future()
-                await self.task_signal
-
-        return await aio.wait_for(inner(), timeout=15)
-
     async def get(self) -> BgData:
         if not self.backgrounds:
             self.start_preload(create_when_full=True)
             if self.tasks:
-                await self.wait_signal()
+                await self._wait_signal()
             if not self.backgrounds:
                 raise RuntimeError("Failed to wait background")
         bg = self.backgrounds.pop(0)

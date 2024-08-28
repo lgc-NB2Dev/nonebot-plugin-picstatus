@@ -174,6 +174,10 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ## 📝 更新日志
 
+### 2.1.2
+
+- fix [#49](https://github.com/lgc-NB2Dev/nonebot-plugin-picstatus/issues/49)
+
 ### 2.1.1
 
 - 重新加入指令带图/回复图自定义背景功能
