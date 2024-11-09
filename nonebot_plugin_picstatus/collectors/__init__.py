@@ -103,7 +103,7 @@ def collector(name: str):
     return deco
 
 
-def enable_collector(name: str):
+def _enable_collector(name: str):
     if name not in registered_collectors:
         raise ValueError(f"Collector {name} not found")
     cls = registered_collectors[name]
@@ -116,8 +116,9 @@ def enable_collector(name: str):
 
 async def enable_collectors(*names: str):
     for name in names:
-        enable_collector(name)
+        _enable_collector(name)
     await init_first_time_collectors()
+    await collect_perodic_collectors()
 
 
 def functional_collector(cls: Type[Collector], name: Optional[str] = None):
