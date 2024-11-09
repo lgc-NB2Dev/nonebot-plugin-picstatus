@@ -199,7 +199,7 @@ async def init_first_time_collectors():
 
 
 @scheduler.scheduled_job("interval", seconds=config.ps_collect_interval)
-async def _():
+async def collect_perodic_collectors():
     await asyncio.gather(
         *(
             x.collect()
