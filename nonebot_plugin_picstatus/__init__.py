@@ -10,7 +10,6 @@ require("nonebot_plugin_userinfo")
 from . import __main__ as __main__, misc_statistics as misc_statistics
 from .bg_provider import bg_preloader
 from .collectors import (
-    collect_perodic_collectors,
     enable_collectors,
     load_builtin_collectors,
     registered_collectors,
@@ -41,7 +40,6 @@ async def _():
         else current_template.collectors
     )
     await enable_collectors(*collectors)
-    await collect_perodic_collectors()
 
     bg_preloader.start_preload()
 
