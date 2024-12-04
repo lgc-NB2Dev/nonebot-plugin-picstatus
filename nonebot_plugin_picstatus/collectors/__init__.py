@@ -3,19 +3,9 @@ import importlib
 import time
 from abc import abstractmethod
 from collections import deque
+from collections.abc import Awaitable
 from pathlib import Path
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Deque,
-    Dict,
-    Generic,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Generic, Optional, TypeVar, Union
 from typing_extensions import override
 
 from nonebot import logger
@@ -68,13 +58,13 @@ class BaseFirstTimeCollector(Collector[T, T], Generic[T]):
         return data
 
 
-class BasePeriodicCollector(Collector[T, Deque[T]], Generic[T]):
+class BasePeriodicCollector(Collector[T, deque[T]], Generic[T]):
     def __init__(self, size: int = config.ps_default_collect_cache_size) -> None:
         super().__init__()
         self.data = deque(maxlen=size)
 
     @override
-    async def get(self) -> Deque[T]:
+    async def get(self) -> deque[T]:
         return self.data
 
     async def collect(self):
@@ -88,12 +78,12 @@ class BasePeriodicCollector(Collector[T, Deque[T]], Generic[T]):
             self.data.append(data)
 
 
-registered_collectors: Dict[str, Type[Collector]] = {}
-enabled_collectors: Dict[str, Collector] = {}
+registered_collectors: dict[str, type[Collector]] = {}
+enabled_collectors: dict[str, Collector] = {}
 
 
 def collector(name: str):
-    def deco(cls: Type[TC]) -> Type[TC]:
+    def deco(cls: type[TC]) -> type[TC]:
         if name in registered_collectors:
             raise ValueError(f"Collector {name} already exists")
         registered_collectors[name] = cls
@@ -121,7 +111,7 @@ async def enable_collectors(*names: str):
     await collect_perodic_collectors()
 
 
-def functional_collector(cls: Type[Collector], name: Optional[str] = None):
+def functional_collector(cls: type[Collector], name: Optional[str] = None):
     def deco(func: TCF) -> TCF:
         collector_name = name or func.__name__
         if not collector_name:
@@ -175,7 +165,7 @@ class TimeBasedCounterCollector(BasePeriodicCollector[R], Generic[T, R]):
         return await self._calc(past, self.last_obj, time_passed)
 
 
-async def collect_all() -> Dict[str, Any]:
+async def collect_all() -> dict[str, Any]:
     async def get(name: str):
         return name, await enabled_collectors[name].get()
 

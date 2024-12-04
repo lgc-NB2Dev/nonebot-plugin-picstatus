@@ -1,6 +1,6 @@
 from collections import deque
 from pathlib import Path
-from typing import Any, Dict, List, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import jinja2
 from cookit import flatten
@@ -8,7 +8,6 @@ from cookit.pyd import field_validator
 from nonebot import get_plugin_config, require
 from pydantic import BaseModel
 
-from ...bg_provider import BgData
 from ...debug import is_debug_mode, write_debug_file
 from .. import pic_template
 from ..pw_render import (
@@ -24,6 +23,9 @@ from ..pw_render import (
 require("nonebot_plugin_htmlrender")
 
 from nonebot_plugin_htmlrender import get_new_page  # noqa: E402
+
+if TYPE_CHECKING:
+    from ...bg_provider import BgData
 
 RES_PATH = Path(__file__).parent / "res"
 TEMPLATE_PATH = RES_PATH / "templates"
@@ -65,7 +67,7 @@ COMPONENT_COLLECTORS = {
 
 
 class TemplateConfig(BaseModel):
-    ps_default_components: List[str] = [
+    ps_default_components: list[str] = [
         "header",
         "cpu_mem",
         "disk",
@@ -73,16 +75,16 @@ class TemplateConfig(BaseModel):
         "process",
         "footer",
     ]
-    ps_default_additional_css: List[str] = []
-    ps_default_additional_script: List[str] = []
+    ps_default_additional_css: list[str] = []
+    ps_default_additional_script: list[str] = []
     ps_default_pic_format: Literal["jpeg", "png"] = "jpeg"
 
     @field_validator("ps_default_additional_css")
-    def resolve_css_url(cls, v: List[str]):  # noqa: N805
+    def resolve_css_url(cls, v: list[str]):  # noqa: N805
         return [resolve_file_url(x, {"default/res/css": CSS_PATH}) for x in v]
 
     @field_validator("ps_default_additional_script")
-    def resolve_script_url(cls, v: List[str]):  # noqa: N805
+    def resolve_script_url(cls, v: list[str]):  # noqa: N805
         return [resolve_file_url(x) for x in v]
 
 
@@ -93,10 +95,8 @@ collecting = set(
 
 
 @pic_template(collecting=collecting)
-async def default(collected: Dict[str, Any], bg: BgData, **_) -> bytes:
-    collected = {
-        k: v[0] if isinstance(v, deque) else v for k, v in collected.items()
-    }
+async def default(collected: dict[str, Any], bg: "BgData", **_) -> bytes:
+    collected = {k: v[0] if isinstance(v, deque) else v for k, v in collected.items()}
     template = ENVIRONMENT.get_template("index.html.jinja")
     html = await template.render_async(d=collected, config=template_config)
 

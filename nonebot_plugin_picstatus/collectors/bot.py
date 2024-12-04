@@ -1,10 +1,9 @@
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from nonebot import get_bots, logger
-from nonebot.adapters import Bot as BaseBot
 from nonebot.matcher import current_bot
 
 from ..config import config
@@ -16,6 +15,9 @@ from ..misc_statistics import (
 )
 from ..util import format_timedelta
 from . import normal_collector
+
+if TYPE_CHECKING:
+    from nonebot.adapters import Bot as BaseBot
 
 try:
     from nonebot.adapters.onebot.v11 import Bot as OBV11Bot
@@ -33,7 +35,7 @@ class BotStatus:
     msg_sent: str
 
 
-async def get_ob11_msg_num(bot: BaseBot) -> Tuple[Optional[int], Optional[int]]:
+async def get_ob11_msg_num(bot: "BaseBot") -> tuple[Optional[int], Optional[int]]:
     if not (config.ps_ob_v11_use_get_status and OBV11Bot and isinstance(bot, OBV11Bot)):
         return None, None
 
@@ -54,7 +56,7 @@ async def get_ob11_msg_num(bot: BaseBot) -> Tuple[Optional[int], Optional[int]]:
     return msg_rec, msg_sent
 
 
-async def get_bot_status(bot: BaseBot, now_time: datetime) -> BotStatus:
+async def get_bot_status(bot: "BaseBot", now_time: datetime) -> BotStatus:
     nick = (
         ((info := bot_info_cache[bot.self_id]).user_displayname or info.user_name)
         if (not config.ps_use_env_nick) and (bot.self_id in bot_info_cache)
@@ -85,7 +87,7 @@ async def get_bot_status(bot: BaseBot, now_time: datetime) -> BotStatus:
 
 
 @normal_collector()
-async def bots() -> List[BotStatus]:
+async def bots() -> list[BotStatus]:
     now_time = datetime.now().astimezone()
     return (
         [await get_bot_status(current_bot.get(), now_time)]

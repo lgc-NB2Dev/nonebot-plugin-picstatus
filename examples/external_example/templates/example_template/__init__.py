@@ -3,12 +3,11 @@
 import json
 from collections import deque
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import jinja2 as jj
 from cookit.jinja import make_register_jinja_filter_deco
 from nonebot import get_plugin_config, require
-from nonebot_plugin_picstatus.bg_provider import BgData
 from nonebot_plugin_picstatus.templates import pic_template
 from nonebot_plugin_picstatus.templates.pw_render import (
     ROUTE_URL,
@@ -30,6 +29,9 @@ from pydantic import BaseModel
 require("nonebot_plugin_htmlrender")
 
 from nonebot_plugin_htmlrender import get_new_page
+
+if TYPE_CHECKING:
+    from nonebot_plugin_picstatus.bg_provider import BgData
 
 RES_DIR = Path(__file__).parent / "res"
 
@@ -76,7 +78,7 @@ template_config = get_plugin_config(TemplateConfig)
         "time_counter",
     },
 )
-async def example_template(collected: Dict[str, Any], bg: BgData, **_):
+async def example_template(collected: dict[str, Any], bg: "BgData", **_):
     template = template_env.get_template("index.html.jinja")
     html = await template.render_async(d=collected, config=template_config)
 

@@ -1,18 +1,21 @@
 import importlib
+from collections.abc import Awaitable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Awaitable, Dict, Optional, Set, TypedDict
+from typing import TYPE_CHECKING, Any, Optional, TypedDict
 from typing_extensions import Protocol, Unpack
 
 from nonebot import logger
 
-from ..bg_provider import BgData
 from ..config import config
+
+if TYPE_CHECKING:
+    from ..bg_provider import BgData
 
 
 class TemplateRendererKwargs(TypedDict):
-    collected: Dict[str, Any]
-    bg: BgData
+    collected: dict[str, Any]
+    bg: "BgData"
 
 
 class TemplateRenderer(Protocol):
@@ -27,15 +30,15 @@ class TemplateRenderer(Protocol):
 @dataclass()
 class TemplateInfo:
     renderer: TemplateRenderer
-    collectors: Optional[Set[str]] = None
+    collectors: Optional[set[str]] = None
 
 
-loaded_templates: Dict[str, TemplateInfo] = {}
+loaded_templates: dict[str, TemplateInfo] = {}
 
 
 def pic_template(
     name: Optional[str] = None,
-    collecting: Optional[Set[str]] = None,
+    collecting: Optional[set[str]] = None,
 ):
     def deco(func: TemplateRenderer):
         template_name = name or func.__name__

@@ -1,6 +1,6 @@
 import re
 from functools import partial
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from cookit import auto_convert_byte, format_timedelta
 
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 format_time_delta_ps = partial(format_timedelta, day_divider=" ", day_suffix="天")
 
 
-def match_list_regexp(reg_list: List[str], txt: str) -> Optional[re.Match]:
+def match_list_regexp(reg_list: list[str], txt: str) -> Optional[re.Match]:
     return next((match for r in reg_list if (match := re.search(r, txt))), None)
 
 

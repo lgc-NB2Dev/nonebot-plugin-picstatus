@@ -1,6 +1,6 @@
 import asyncio
 from dataclasses import dataclass
-from typing import List, Optional, Union, cast
+from typing import Optional, Union, cast
 
 import psutil
 
@@ -17,7 +17,7 @@ class ProcessStatus:
 
 
 @periodic_collector()
-async def process_status() -> List[ProcessStatus]:
+async def process_status() -> list[ProcessStatus]:
     if not config.ps_proc_len:
         return []
 
@@ -44,7 +44,7 @@ async def process_status() -> List[ProcessStatus]:
         return x.cpu
 
     proc_list = cast(
-        List[Union[Optional[ProcessStatus], Exception]],
+        "list[Union[Optional[ProcessStatus], Exception]]",
         await asyncio.gather(
             *(parse_one(proc) for proc in psutil.process_iter()),
             return_exceptions=True,

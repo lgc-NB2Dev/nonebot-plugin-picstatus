@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 import psutil
 from nonebot import logger
@@ -35,7 +35,7 @@ class DiskIO:
 
 
 @periodic_collector()
-async def disk_usage() -> List[DiskUsageType]:
+async def disk_usage() -> list[DiskUsageType]:
     def get_one(disk: sdiskpart) -> Optional[DiskUsageType]:
         mountpoint = disk.mountpoint
 
@@ -71,13 +71,13 @@ async def disk_usage() -> List[DiskUsageType]:
 
 
 @collector("disk_io")
-class DiskIOCollector(TimeBasedCounterCollector[Dict[str, sdiskio], List[DiskIO]]):
+class DiskIOCollector(TimeBasedCounterCollector[dict[str, sdiskio], list[DiskIO]]):
     async def _calc(
         self,
-        past: Dict[str, sdiskio],
-        now: Dict[str, sdiskio],
+        past: dict[str, sdiskio],
+        now: dict[str, sdiskio],
         time_passed: float,
-    ) -> List[DiskIO]:
+    ) -> list[DiskIO]:
         def calc_one(name: str, past_it: sdiskio, now_it: sdiskio) -> Optional[DiskIO]:
             if match_list_regexp(config.ps_ignore_disk_ios, name):
                 # logger.info(f"IO统计 磁盘 {name} 匹配 {regex.re.pattern}，忽略")
@@ -98,5 +98,5 @@ class DiskIOCollector(TimeBasedCounterCollector[Dict[str, sdiskio], List[DiskIO]
             res.sort(key=lambda x: x.read + x.write, reverse=True)
         return res
 
-    async def _get_obj(self) -> Dict[str, sdiskio]:
+    async def _get_obj(self) -> dict[str, sdiskio]:
         return psutil.disk_io_counters(perdisk=True)

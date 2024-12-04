@@ -19,7 +19,7 @@ class CpuFreq:
 async def cpu_brand() -> str:
     try:
         brand = (
-            cast(str, get_cpu_info().get("brand_raw", ""))
+            cast("str", get_cpu_info().get("brand_raw", ""))
             .split("@", maxsplit=1)[0]
             .strip()
         )

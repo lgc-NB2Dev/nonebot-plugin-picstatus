@@ -1,7 +1,7 @@
 import asyncio
 import time
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 import psutil
 from httpx import AsyncClient, ReadTimeout
@@ -37,13 +37,13 @@ NetworkConnectionType = Union[NetworkConnectionOK, NetworkConnectionError]
 
 
 @collector("network_io")
-class NetworkIOCollector(TimeBasedCounterCollector[Dict[str, snetio], List[NetworkIO]]):
+class NetworkIOCollector(TimeBasedCounterCollector[dict[str, snetio], list[NetworkIO]]):
     async def _calc(
         self,
-        past: Dict[str, snetio],
-        now: Dict[str, snetio],
+        past: dict[str, snetio],
+        now: dict[str, snetio],
         time_passed: float,
-    ) -> List[NetworkIO]:
+    ) -> list[NetworkIO]:
         def calc_one(name: str, past_it: snetio, now_it: snetio) -> Optional[NetworkIO]:
             if match_list_regexp(config.ps_ignore_nets, name):
                 # logger.info(f"网卡IO统计 {name} 匹配 {regex.re.pattern}，忽略")
@@ -64,12 +64,12 @@ class NetworkIOCollector(TimeBasedCounterCollector[Dict[str, snetio], List[Netwo
             res.sort(key=lambda x: x.sent + x.recv, reverse=True)
         return res
 
-    async def _get_obj(self) -> Dict[str, snetio]:
+    async def _get_obj(self) -> dict[str, snetio]:
         return psutil.net_io_counters(pernic=True)
 
 
 @normal_collector()
-async def network_connection() -> List[NetworkConnectionType]:
+async def network_connection() -> list[NetworkConnectionType]:
     def format_conn_error(error: Exception) -> str:
         if isinstance(error, ReadTimeout):
             return "超时"

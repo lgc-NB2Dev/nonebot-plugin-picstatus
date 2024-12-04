@@ -1,14 +1,17 @@
 import asyncio as aio
 import mimetypes
 import random
-from pathlib import Path
-from typing import Awaitable, Callable, Dict, List, NamedTuple, Optional, TypeVar
+from collections.abc import Awaitable
+from typing import TYPE_CHECKING, Callable, NamedTuple, Optional, TypeVar
 
 import anyio
 from httpx import AsyncClient, Response
 from nonebot import logger
 
 from .config import DEFAULT_BG_PATH, config
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class BgData(NamedTuple):
@@ -19,10 +22,10 @@ class BgData(NamedTuple):
 BGProviderType = Callable[[], Awaitable[BgData]]
 TBP = TypeVar("TBP", bound=BGProviderType)
 
-registered_bg_providers: Dict[str, BGProviderType] = {}
+registered_bg_providers: dict[str, BGProviderType] = {}
 
 
-def get_bg_files() -> List[Path]:
+def get_bg_files() -> list["Path"]:
     if not config.ps_bg_local_path.exists():
         logger.warning("Custom background path does not exist, fallback to default")
         return [DEFAULT_BG_PATH]
@@ -133,8 +136,8 @@ class BgPreloader:
         if preload_count < 1:
             raise ValueError("preload_count must be greater than 0")
         self.preload_count = preload_count
-        self.backgrounds: List[BgData] = []
-        self.tasks: List[aio.Task[None]] = []
+        self.backgrounds: list[BgData] = []
+        self.tasks: list[aio.Task[None]] = []
         self.task_signal: Optional[aio.Future[None]] = None
         self.signal_wait_lock = aio.Lock()
 
