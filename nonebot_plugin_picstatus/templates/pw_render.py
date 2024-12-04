@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, Optional, TypeVar
 from urllib.parse import urlencode
 
 import jinja2
-from cookit import auto_convert_byte, make_append_func_to_dict_deco
+from cookit import auto_convert_byte, make_append_obj_to_dict_deco
 from cookit.jinja import all_filters
 from cookit.pw import CKRouterFunc, RouterGroup, make_real_path_router
 from cookit.pw.loguru import log_router_err
@@ -125,7 +125,7 @@ def add_background_router(router_group: RouterGroup, bg: BgData):
 global_jinja_filters: Dict[str, Callable] = all_filters.copy()
 
 
-jinja_filter = make_append_func_to_dict_deco(global_jinja_filters)
+jinja_filter = make_append_obj_to_dict_deco(global_jinja_filters)
 
 
 def register_global_filter_to(env: jinja2.Environment):
