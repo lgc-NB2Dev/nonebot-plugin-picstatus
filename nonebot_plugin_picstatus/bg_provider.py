@@ -64,7 +64,7 @@ def resp_to_bg_data(resp: Response):
 async def loli():
     async with AsyncClient(
         follow_redirects=True,
-        proxies=config.proxy,
+        proxy=config.proxy,
         timeout=config.ps_req_timeout,
     ) as cli:
         return resp_to_bg_data(
@@ -76,7 +76,7 @@ async def loli():
 async def lolicon():
     async with AsyncClient(
         follow_redirects=True,
-        proxies=config.proxy,
+        proxy=config.proxy,
         timeout=config.ps_req_timeout,
     ) as cli:
         resp = await cli.get(

@@ -13,7 +13,7 @@ from nonebot_plugin_picstatus.config import config
 async def lgc_icon() -> BgData:
     async with AsyncClient(
         follow_redirects=True,
-        proxies=config.proxy,
+        proxy=config.proxy,
         timeout=config.ps_req_timeout,
     ) as cli:
         return resp_to_bg_data(

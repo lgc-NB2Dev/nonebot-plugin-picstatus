@@ -79,7 +79,7 @@ async def network_connection() -> list[NetworkConnectionType]:
         try:
             async with AsyncClient(
                 timeout=config.ps_test_timeout,
-                proxies=config.proxy if site.use_proxy else None,
+                proxy=config.proxy if site.use_proxy else None,
                 follow_redirects=True,
             ) as client:
                 start = time.time()
