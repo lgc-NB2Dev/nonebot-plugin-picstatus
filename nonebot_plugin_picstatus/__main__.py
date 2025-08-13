@@ -1,8 +1,7 @@
 import asyncio
-from contextlib import suppress
 
 from nonebot import logger, on_command
-from nonebot.adapters import Bot as BaseBot, Event as BaseEvent, Message as BaseMessage
+from nonebot.adapters import Message as BaseMessage
 from nonebot.matcher import current_bot, current_event, current_matcher
 from nonebot.params import CommandArg, Depends
 from nonebot.permission import SUPERUSER
@@ -12,7 +11,6 @@ from nonebot_plugin_alconna.uniseg import Image, Reply, UniMessage, UniMsg, imag
 from .bg_provider import BgData, bg_preloader
 from .collectors import collect_all
 from .config import config
-from .misc_statistics import cache_bot_info
 from .templates import render_current_template
 
 
@@ -65,9 +63,9 @@ def MsgPic():  # noqa: N802
 
 
 @stat_matcher.handle()
-async def _(bot: BaseBot, event: BaseEvent, msg_pic: BgData | None = MsgPic()):
-    with suppress(Exception):
-        await cache_bot_info(bot, event)
+async def _(msg_pic: BgData | None = MsgPic()):
+    # with suppress(Exception):
+    #     await cache_bot_info(bot)
 
     async def get_bg():
         return msg_pic or (await bg_preloader.get())
