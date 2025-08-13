@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, cast
+from typing import cast
 
 import psutil
 from cpuinfo import get_cpu_info
@@ -10,9 +10,9 @@ from . import first_time_collector, periodic_collector
 
 @dataclass
 class CpuFreq:
-    current: Optional[float]
-    min: Optional[float]  # noqa: A003
-    max: Optional[float]  # noqa: A003
+    current: float | None
+    min: float | None  # noqa: A003
+    max: float | None  # noqa: A003
 
 
 @first_time_collector()
@@ -33,12 +33,12 @@ async def cpu_brand() -> str:
 
 
 @first_time_collector()
-async def cpu_count_logical() -> int:
+async def cpu_count_logical() -> int | None:
     return psutil.cpu_count()
 
 
 @first_time_collector()
-async def cpu_count() -> int:
+async def cpu_count() -> int | None:
     return psutil.cpu_count(logical=False)
 
 

@@ -3,9 +3,9 @@ import importlib
 import time
 from abc import abstractmethod
 from collections import deque
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from pathlib import Path
-from typing import Any, Callable, Generic, Optional, TypeVar, Union
+from typing import Any, Generic, TypeVar
 from typing_extensions import override
 
 from nonebot import logger
@@ -47,7 +47,7 @@ class BaseNormalCollector(Collector[T, T], Generic[T]):
 class BaseFirstTimeCollector(Collector[T, T], Generic[T]):
     def __init__(self) -> None:
         super().__init__()
-        self._cached: Union[T, Undefined] = Undefined()
+        self._cached: T | Undefined = Undefined()
 
     @override
     async def get(self) -> T:
@@ -111,7 +111,7 @@ async def enable_collectors(*names: str):
     await collect_perodic_collectors()
 
 
-def functional_collector(cls: type[Collector], name: Optional[str] = None):
+def functional_collector(cls: type[Collector], name: str | None = None):
     def deco(func: TCF) -> TCF:
         collector_name = name or func.__name__
         if not collector_name:
@@ -127,22 +127,22 @@ def functional_collector(cls: type[Collector], name: Optional[str] = None):
     return deco
 
 
-def normal_collector(name: Optional[str] = None):
+def normal_collector(name: str | None = None):
     return functional_collector(BaseNormalCollector, name)
 
 
-def first_time_collector(name: Optional[str] = None):
+def first_time_collector(name: str | None = None):
     return functional_collector(BaseFirstTimeCollector, name)
 
 
-def periodic_collector(name: Optional[str] = None):
+def periodic_collector(name: str | None = None):
     return functional_collector(BasePeriodicCollector, name)
 
 
 class TimeBasedCounterCollector(BasePeriodicCollector[R], Generic[T, R]):
     def __init__(self, size: int = config.ps_default_collect_cache_size) -> None:
         super().__init__(size)
-        self.last_obj: Union[Undefined, T] = Undefined()
+        self.last_obj: Undefined | T = Undefined()
         self.last_time: float = 0
 
     @abstractmethod

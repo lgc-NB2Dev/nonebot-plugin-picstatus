@@ -1,10 +1,11 @@
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable, Optional, Union
+from typing import Any
 
 from nonebot import get_driver, logger
 from nonebot.adapters import Bot as BaseBot, Event as BaseEvent
 from nonebot.message import event_preprocessor
-from nonebot_plugin_userinfo import UserInfo, get_user_info
+from nonebot_plugin_uninfo import User, get_interface
 
 from .config import config
 
@@ -13,12 +14,12 @@ bot_connect_time: dict[str, datetime] = {}
 recv_num: dict[str, int] = {}
 send_num: dict[str, int] = {}
 
-bot_info_cache: dict[str, UserInfo] = {}
+bot_info_cache: dict[str, User] = {}
 bot_avatar_cache: dict[str, bytes] = {}
 
 driver = get_driver()
 
-SEND_APIS: dict[str, Union[list[str], Callable[[str], bool]]] = {
+SEND_APIS: dict[str, list[str] | Callable[[str], bool]] = {
     # "BilibiliLive": [],  # 狗东西发消息不走 call_api
     "Console": ["send_msg"],
     "Ding": ["send"],
@@ -77,7 +78,7 @@ if config.ps_count_message_sent_event is not True:
     @BaseBot.on_called_api
     async def called_api(
         bot: BaseBot,
-        exc: Optional[Exception],
+        exc: Exception | None,
         api: str,
         _: dict[str, Any],
         __: Any,
@@ -95,6 +96,17 @@ if config.ps_count_message_sent_event is not True:
             send_num[bot.self_id] += 1
 
 
+async def cache_bot_info(bot: BaseBot):
+    try:
+        it = get_interface(bot)
+        info = (await it.get_user(bot.self_id)) if it else None
+    except Exception as e:
+        logger.warning(f"Error when getting bot info: {e.__class__.__name__}: {e}")
+    else:
+        if info:
+            bot_info_cache[bot.self_id] = info
+
+
 @driver.on_bot_connect
 async def _(bot: BaseBot):
     bot_connect_time[bot.self_id] = datetime.now().astimezone()
@@ -102,6 +114,7 @@ async def _(bot: BaseBot):
         recv_num[bot.self_id] = 0
     if (bot.self_id not in send_num) and (bot.adapter.get_name() in SEND_APIS):
         send_num[bot.self_id] = 0
+    await cache_bot_info(bot)
 
 
 @driver.on_bot_disconnect
@@ -116,22 +129,3 @@ async def _(bot: BaseBot):
 async def _(bot: BaseBot, event: BaseEvent):
     if event.get_type() == "message":
         recv_num[bot.self_id] += 1
-
-
-async def cache_bot_info(bot: BaseBot, event: BaseEvent):
-    try:
-        info = await get_user_info(bot, event, bot.self_id)
-    except ValueError as e:
-        logger.debug(e)
-    except Exception as e:
-        logger.warning(f"Error when getting bot info: {e.__class__.__name__}: {e}")
-    else:
-        if info:
-            bot_info_cache[bot.self_id] = info
-
-
-@event_preprocessor
-async def _(bot: BaseBot, event: BaseEvent):
-    if bot.self_id in bot_info_cache:
-        return
-    await cache_bot_info(bot, event)

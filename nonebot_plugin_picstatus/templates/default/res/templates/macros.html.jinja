@@ -42,13 +42,15 @@
 {% endmacro %}
 
 {% macro cpu_mem(d) %}
+{% if d.cpu_count %}{% set count = d.cpu_count %}{% else %}{% set count = '??' %}{% endif %}
+{% if d.cpu_count_logical %}{% set logical = d.cpu_count_logical %}{% else %}{% set logical = '??' %}{% endif %}
 {% set freq = d.cpu_freq | format_cpu_freq %}
 {% set ram_used = d.memory_stat.used | auto_convert_unit %}
 {% set ram_total = d.memory_stat.total | auto_convert_unit %}
 {% set swap_used = d.swap_stat.used | auto_convert_unit %}
 {% set swap_total = d.swap_stat.total | auto_convert_unit %}
 <div class="card cpu-mem-usage donut-chart-line">
-  {{ donut_chart(d.cpu_percent, "CPU", "{}核 {}线程 {}\n{}".format(d.cpu_count, d.cpu_count_logical, freq, d.cpu_brand)) }}
+  {{ donut_chart(d.cpu_percent, "CPU", "{}核 {}线程 {}\n{}".format(count, logical, freq, d.cpu_brand)) }}
   {{ donut_chart(d.memory_stat.percent, "RAM", "{} / {}").format(ram_used, ram_total) }}
   {{ donut_chart(d.swap_stat.percent, "SWAP", "{} / {}").format(swap_used, swap_total) }}
 </div>

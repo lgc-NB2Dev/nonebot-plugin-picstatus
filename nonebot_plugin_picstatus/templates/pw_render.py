@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 from urllib.parse import urlencode
 
 from cookit import auto_convert_byte, make_append_obj_to_dict_deco
@@ -7,6 +8,8 @@ from cookit.jinja import all_filters
 from cookit.pw import CKRouterFunc, RouterGroup, make_real_path_router
 from cookit.pw.loguru import log_router_err
 from nonebot import logger
+from nonebot.matcher import current_bot, current_event, current_matcher
+from nonebot_plugin_alconna import Image, image_fetch
 from yarl import URL
 
 from ..config import DEFAULT_AVATAR_PATH, config
@@ -35,7 +38,7 @@ base_router_group = RouterGroup()
 
 def resolve_file_url(
     path: str,
-    additional_locations: Optional[dict[str, Path]] = None,
+    additional_locations: dict[str, Path] | None = None,
 ) -> str:
     if path.startswith("res:"):
         path = path[4:].lstrip("/")
@@ -49,8 +52,8 @@ def resolve_file_url(
 
 
 def make_file_router(
-    query_name: Optional[str] = None,
-    base_path: Optional[Path] = None,
+    query_name: str | None = None,
+    base_path: Path | None = None,
     prefix_omit: str = "",
 ) -> CKRouterFunc:
     @log_router_err()
@@ -77,18 +80,25 @@ async def _(route: "Route", request: "Request", **_):
         await route.fulfill(body=bot_avatar_cache[self_id])
         return
 
-    if (self_id in bot_info_cache) and (avatar := bot_info_cache[self_id].user_avatar):
+    if (cache := bot_info_cache.get(self_id)) and (avatar := cache.avatar):
         try:
-            img = await avatar.get_image()
+            img = await image_fetch(
+                current_event.get(),
+                current_bot.get(),
+                current_matcher.get().state,
+                Image(url=avatar),
+            )
         except Exception as e:
             logger.warning(
                 f"Error when getting bot avatar, fallback to default: "
                 f"{e.__class__.__name__}: {e}",
             )
         else:
-            bot_avatar_cache[self_id] = img
-            await route.fulfill(body=img)
-            return
+            if img:
+                bot_avatar_cache[self_id] = img
+                await route.fulfill(body=img)
+                return
+            logger.warning("image_fetch returned None")
 
     data = (
         config.ps_default_avatar

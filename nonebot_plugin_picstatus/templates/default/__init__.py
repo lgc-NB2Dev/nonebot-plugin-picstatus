@@ -8,7 +8,7 @@ from cookit.pyd import field_validator
 from nonebot import get_plugin_config, require
 from pydantic import BaseModel
 
-from ...debug import is_debug_mode, write_debug_file
+from ...util import debug
 from .. import pic_template
 from ..pw_render import (
     ROUTE_URL,
@@ -100,8 +100,8 @@ async def default(collected: dict[str, Any], bg: "BgData", **_) -> bytes:
     template = ENVIRONMENT.get_template("index.html.jinja")
     html = await template.render_async(d=collected, config=template_config)
 
-    if is_debug_mode():
-        write_debug_file("default_{time}.html", html)
+    if debug.enabled:
+        debug.write(html, "default_{time}.html")
 
     router_group = template_router_group.copy()
     add_root_router(router_group, html)

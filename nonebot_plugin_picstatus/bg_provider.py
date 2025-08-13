@@ -1,8 +1,8 @@
 import asyncio as aio
 import mimetypes
 import random
-from collections.abc import Awaitable
-from typing import TYPE_CHECKING, Callable, NamedTuple, Optional, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING, NamedTuple, TypeVar
 
 import anyio
 from httpx import AsyncClient, Response
@@ -42,7 +42,7 @@ def get_bg_files() -> list["Path"]:
 BG_FILES = get_bg_files()
 
 
-def bg_provider(name: Optional[str] = None):
+def bg_provider(name: str | None = None):
     def deco(func: TBP) -> TBP:
         provider_name = name or func.__name__
         if provider_name in registered_bg_providers:
@@ -138,7 +138,7 @@ class BgPreloader:
         self.preload_count = preload_count
         self.backgrounds: list[BgData] = []
         self.tasks: list[aio.Task[None]] = []
-        self.task_signal: Optional[aio.Future[None]] = None
+        self.task_signal: aio.Future[None] | None = None
         self.signal_wait_lock = aio.Lock()
 
     def _get_signal(self) -> aio.Future[None]:

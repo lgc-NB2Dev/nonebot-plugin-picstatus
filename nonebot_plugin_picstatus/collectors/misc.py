@@ -3,7 +3,6 @@ import platform
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Union
 
 import nonebot
 import psutil
@@ -13,9 +12,9 @@ from ..util import format_time_delta_ps
 from . import first_time_collector, normal_collector, periodic_collector
 
 
-def parse_env(env: str) -> dict[str, Optional[str]]:
+def parse_env(env: str) -> dict[str, str | None]:
     env_lines = env.strip().splitlines()
-    env_dict: dict[str, Optional[str]] = {}
+    env_dict: dict[str, str | None] = {}
 
     for line in env_lines:
         if "=" not in line:
@@ -28,7 +27,7 @@ def parse_env(env: str) -> dict[str, Optional[str]]:
     return env_dict
 
 
-def parse_env_file(env_file: Union[str, Path]) -> Optional[dict[str, Optional[str]]]:
+def parse_env_file(env_file: str | Path) -> dict[str, str | None] | None:
     if not isinstance(env_file, Path):
         env_file = Path(env_file)
     if not env_file.exists():
@@ -38,7 +37,7 @@ def parse_env_file(env_file: Union[str, Path]) -> Optional[dict[str, Optional[st
 
 
 # Thanks to https://github.com/nonedesktop/nonebot-plugin-guestool/blob/main/nonebot_plugin_guestool/info.py
-def get_linux_name_version() -> Optional[tuple[str, str]]:
+def get_linux_name_version() -> tuple[str, str] | None:
     env = parse_env_file("/etc/os-release")
     if env and (name := env.get("NAME")) and (version_id := env.get("VERSION_ID")):
         return name, version_id

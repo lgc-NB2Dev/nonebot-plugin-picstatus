@@ -1,6 +1,5 @@
 import asyncio
 from contextlib import suppress
-from typing import Optional
 
 from nonebot import logger, on_command
 from nonebot.adapters import Bot as BaseBot, Event as BaseEvent, Message as BaseMessage
@@ -37,7 +36,7 @@ stat_matcher = on_command(
 )
 
 
-async def _msg_pic(msg: UniMsg) -> Optional[BgData]:
+async def _msg_pic(msg: UniMsg) -> BgData | None:
     msg = (
         r
         if (
@@ -66,7 +65,7 @@ def MsgPic():  # noqa: N802
 
 
 @stat_matcher.handle()
-async def _(bot: BaseBot, event: BaseEvent, msg_pic: Optional[BgData] = MsgPic()):
+async def _(bot: BaseBot, event: BaseEvent, msg_pic: BgData | None = MsgPic()):
     with suppress(Exception):
         await cache_bot_info(bot, event)
 

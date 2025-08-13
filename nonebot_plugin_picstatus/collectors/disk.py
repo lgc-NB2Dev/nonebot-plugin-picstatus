@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import TypeAlias
 
 import psutil
-from nonebot import logger
 from psutil._common import sdiskio, sdiskpart
 
 from ..config import config
@@ -24,7 +23,7 @@ class DiskUsageWithExc:
     exception: str
 
 
-DiskUsageType = Union[DiskUsageNormal, DiskUsageWithExc]
+DiskUsageType: TypeAlias = DiskUsageNormal | DiskUsageWithExc
 
 
 @dataclass
@@ -36,7 +35,7 @@ class DiskIO:
 
 @periodic_collector()
 async def disk_usage() -> list[DiskUsageType]:
-    def get_one(disk: sdiskpart) -> Optional[DiskUsageType]:
+    def get_one(disk: sdiskpart) -> DiskUsageType | None:
         mountpoint = disk.mountpoint
 
         if match_list_regexp(config.ps_ignore_parts, mountpoint):
@@ -46,7 +45,7 @@ async def disk_usage() -> list[DiskUsageType]:
         try:
             usage = psutil.disk_usage(mountpoint)
         except Exception as e:
-            logger.exception(f"读取 {mountpoint} 占用失败")
+            # logger.exception(f"读取 {mountpoint} 占用失败")
             return (
                 None
                 if config.ps_ignore_bad_parts
@@ -78,7 +77,7 @@ class DiskIOCollector(TimeBasedCounterCollector[dict[str, sdiskio], list[DiskIO]
         now: dict[str, sdiskio],
         time_passed: float,
     ) -> list[DiskIO]:
-        def calc_one(name: str, past_it: sdiskio, now_it: sdiskio) -> Optional[DiskIO]:
+        def calc_one(name: str, past_it: sdiskio, now_it: sdiskio) -> DiskIO | None:
             if match_list_regexp(config.ps_ignore_disk_ios, name):
                 # logger.info(f"IO统计 磁盘 {name} 匹配 {regex.re.pattern}，忽略")
                 return None

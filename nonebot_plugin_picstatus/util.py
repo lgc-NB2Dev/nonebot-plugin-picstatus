@@ -1,8 +1,9 @@
 import re
 from functools import partial
-from typing import TYPE_CHECKING, Optional
+from pathlib import Path
+from typing import TYPE_CHECKING
 
-from cookit import auto_convert_byte, format_timedelta
+from cookit import DebugFileWriter, auto_convert_byte, format_timedelta
 
 if TYPE_CHECKING:
     from .collectors.cpu import CpuFreq
@@ -10,7 +11,7 @@ if TYPE_CHECKING:
 format_time_delta_ps = partial(format_timedelta, day_divider=" ", day_suffix="天")
 
 
-def match_list_regexp(reg_list: list[str], txt: str) -> Optional[re.Match]:
+def match_list_regexp(reg_list: list[str], txt: str) -> re.Match | None:
     return next((match for r in reg_list if (match := re.search(r, txt))), None)
 
 
@@ -23,3 +24,6 @@ def format_cpu_freq(freq: "CpuFreq") -> str:
     if freq.max == freq.current:
         return cu(value=freq.max)
     return f"{cu(value=freq.current)} / {cu(value=freq.max)}"
+
+
+debug = DebugFileWriter(Path.cwd() / "debug", "picstatus")

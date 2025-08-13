@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Literal, Optional, Union
+from typing import Literal
 
 from nonebot import get_plugin_config
 from nonebot.compat import type_validate_python
@@ -27,7 +27,7 @@ class ConfigModel(BaseModel):
     # endregion
 
     # region global
-    proxy: Optional[str] = None
+    proxy: str | None = None
     # endregion
 
     # region behavior
@@ -36,7 +36,7 @@ class ConfigModel(BaseModel):
     ps_only_su: bool = False
     ps_need_at: bool = False
     ps_reply_target: bool = True
-    ps_req_timeout: Optional[int] = 10
+    ps_req_timeout: int | None = 10
     # endregion
 
     # region style
@@ -58,7 +58,7 @@ class ConfigModel(BaseModel):
     ps_use_env_nick: bool = False
     ps_show_current_bot_only: bool = False
     ps_ob_v11_use_get_status: bool = True
-    ps_count_message_sent_event: Union[bool, set[str]] = False
+    ps_count_message_sent_event: bool | set[str] = False
     ps_disconnect_reset_counter: bool = True
     # endregion
 

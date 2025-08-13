@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from nonebot import get_bots, logger
 from nonebot.matcher import current_bot
@@ -35,7 +35,7 @@ class BotStatus:
     msg_sent: str
 
 
-async def get_ob11_msg_num(bot: "BaseBot") -> tuple[Optional[int], Optional[int]]:
+async def get_ob11_msg_num(bot: "BaseBot") -> tuple[int | None, int | None]:
     if not (config.ps_ob_v11_use_get_status and OBV11Bot and isinstance(bot, OBV11Bot)):
         return None, None
 
@@ -58,7 +58,7 @@ async def get_ob11_msg_num(bot: "BaseBot") -> tuple[Optional[int], Optional[int]
 
 async def get_bot_status(bot: "BaseBot", now_time: datetime) -> BotStatus:
     nick = (
-        ((info := bot_info_cache[bot.self_id]).user_displayname or info.user_name)
+        ((info := bot_info_cache[bot.self_id]).nick or info.name or info.id)
         if (not config.ps_use_env_nick) and (bot.self_id in bot_info_cache)
         else next(iter(config.nickname), None)
     ) or "Bot"

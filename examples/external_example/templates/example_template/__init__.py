@@ -3,7 +3,7 @@
 import json
 from collections import deque
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import jinja2 as jj
 from cookit.jinja import make_register_jinja_filter_deco
@@ -61,7 +61,7 @@ template_router_group = base_router_group.copy()
 # 可以把模板特定配置项声明在这里
 # 你也可以不在这里写，换成写到插件的 config.py 文件中，看个人喜好了
 class TemplateConfig(BaseModel):
-    ps_example_template_example_config: Optional[str] = "example"
+    ps_example_template_example_config: str | None = "example"
 
 
 template_config = get_plugin_config(TemplateConfig)

@@ -2,7 +2,7 @@ import importlib
 from collections.abc import Awaitable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 from typing_extensions import Protocol, Unpack
 
 from nonebot import logger
@@ -30,15 +30,15 @@ class TemplateRenderer(Protocol):
 @dataclass()
 class TemplateInfo:
     renderer: TemplateRenderer
-    collectors: Optional[set[str]] = None
+    collectors: set[str] | None = None
 
 
 loaded_templates: dict[str, TemplateInfo] = {}
 
 
 def pic_template(
-    name: Optional[str] = None,
-    collecting: Optional[set[str]] = None,
+    name: str | None = None,
+    collecting: set[str] | None = None,
 ):
     def deco(func: TemplateRenderer):
         template_name = name or func.__name__

@@ -1,7 +1,7 @@
 import asyncio
 import time
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import TypeAlias
 
 import psutil
 from httpx import AsyncClient, ReadTimeout
@@ -33,7 +33,7 @@ class NetworkConnectionError:
     error: str
 
 
-NetworkConnectionType = Union[NetworkConnectionOK, NetworkConnectionError]
+NetworkConnectionType: TypeAlias = NetworkConnectionOK | NetworkConnectionError
 
 
 @collector("network_io")
@@ -44,7 +44,7 @@ class NetworkIOCollector(TimeBasedCounterCollector[dict[str, snetio], list[Netwo
         now: dict[str, snetio],
         time_passed: float,
     ) -> list[NetworkIO]:
-        def calc_one(name: str, past_it: snetio, now_it: snetio) -> Optional[NetworkIO]:
+        def calc_one(name: str, past_it: snetio, now_it: snetio) -> NetworkIO | None:
             if match_list_regexp(config.ps_ignore_nets, name):
                 # logger.info(f"网卡IO统计 {name} 匹配 {regex.re.pattern}，忽略")
                 return None
