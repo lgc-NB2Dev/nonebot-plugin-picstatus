@@ -24,15 +24,9 @@ license = { text = "MIT" }
 [project.urls]
 homepage = "https://github.com/lgc-NB2Dev/nonebot-plugin-picstatus"
 
-[tool.pdm]
-
-[tool.pdm.version]
-source = "file"
-path = "nonebot_plugin_picstatus/__init__.py"
-
-[tool.pdm.build]
-includes = []
-
 [build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "nonebot_plugin_picstatus/__init__.py"
