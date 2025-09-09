@@ -1,16 +1,19 @@
 import asyncio
 
+from cookit.loguru import warning_suppress
 from nonebot import logger, on_command
-from nonebot.adapters import Message as BaseMessage
+from nonebot.adapters import Bot as BaseBot, Event as BaseEvent, Message as BaseMessage
 from nonebot.matcher import current_bot, current_event, current_matcher
-from nonebot.params import CommandArg, Depends
+from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
 from nonebot.rule import Rule, to_me
+from nonebot.typing import T_State
 from nonebot_plugin_alconna.uniseg import Image, Reply, UniMessage, UniMsg, image_fetch
 
-from .bg_provider import BgData, bg_preloader
+from .bg_provider import BgBytesData, bg_preloader
 from .collectors import collect_all
 from .config import config
+from .misc_statistics import bot_avatar_cache, bot_info_cache, cache_bot_avatar
 from .templates import render_current_template
 
 
@@ -34,13 +37,13 @@ stat_matcher = on_command(
 )
 
 
-async def _msg_pic(msg: UniMsg) -> BgData | None:
+async def get_pic_from_msg(msg: UniMessage) -> BgBytesData | None:
     msg = (
         r
         if (
             Reply in msg
             and isinstance((r_org := msg[Reply, 0].msg), BaseMessage)
-            and Image in (r := await UniMessage.generate(message=r_org))
+            and Image in (r := UniMessage.of(message=r_org))
         )
         else msg
     )
@@ -55,20 +58,23 @@ async def _msg_pic(msg: UniMsg) -> BgData | None:
     )
     if not data:
         return None
-    return BgData(data=data, mime=img.mimetype or "image")
-
-
-def MsgPic():  # noqa: N802
-    return Depends(_msg_pic)
+    return BgBytesData(data=data, mime=img.mimetype or "image")
 
 
 @stat_matcher.handle()
-async def _(msg_pic: BgData | None = MsgPic()):
-    # with suppress(Exception):
-    #     await cache_bot_info(bot)
+async def _(bot: BaseBot, event: BaseEvent, state: T_State, msg: UniMsg):
+    if (
+        (bot.self_id not in bot_avatar_cache)
+        and (info := bot_info_cache.get(bot.self_id))
+        and info.avatar
+    ):
+        await cache_bot_avatar(info.avatar, bot, event, state)
 
     async def get_bg():
-        return msg_pic or (await bg_preloader.get())
+        with warning_suppress("Failed to fetch image from user message"):
+            if bg := await get_pic_from_msg(msg):
+                return bg
+        return await bg_preloader.get()
 
     try:
         bg, collected = await asyncio.gather(get_bg(), collect_all())

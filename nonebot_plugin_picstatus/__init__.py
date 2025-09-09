@@ -6,6 +6,7 @@ from nonebot.plugin import PluginMetadata, inherit_supported_adapters
 require("nonebot_plugin_apscheduler")
 require("nonebot_plugin_alconna")
 require("nonebot_plugin_uninfo")
+require("nonebot_plugin_localstore")
 
 from . import __main__ as __main__, misc_statistics as misc_statistics
 from .bg_provider import bg_preloader
@@ -50,7 +51,7 @@ if config.ps_need_at:
 if config.ps_only_su:
     usage += "\n注意：仅SuperUser可以使用此指令"
 
-__version__ = "2.1.4"
+__version__ = "2.2.0"
 __plugin_meta__ = PluginMetadata(
     name="PicStatus",
     description="以图片形式显示当前设备的运行状态",

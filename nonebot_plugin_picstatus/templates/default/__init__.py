@@ -25,7 +25,7 @@ require("nonebot_plugin_htmlrender")
 from nonebot_plugin_htmlrender import get_new_page  # noqa: E402
 
 if TYPE_CHECKING:
-    from ...bg_provider import BgData
+    from ...bg_provider import BgBytesData
 
 RES_PATH = Path(__file__).parent / "res"
 TEMPLATE_PATH = RES_PATH / "templates"
@@ -64,6 +64,18 @@ COMPONENT_COLLECTORS = {
         "system_name",
     },
 }
+PERIODIC_COLLECTORS_MAP = {
+    "cpu_percent": "cpu_percent_periodic",
+    "cpu_freq": "cpu_freq_periodic",
+    "disk_usage": "disk_usage_periodic",
+    "disk_io": "disk_io_periodic",
+    "memory_stat": "memory_stat_periodic",
+    "swap_stat": "swap_stat_periodic",
+    "time": "time_periodic",
+    "network_io": "network_io_periodic",
+    "process_status": "process_status_periodic",
+}
+PERIODIC_COLLECTORS_MAP_REVERSE = {v: k for k, v in PERIODIC_COLLECTORS_MAP.items()}
 
 
 class TemplateConfig(BaseModel):
@@ -78,6 +90,7 @@ class TemplateConfig(BaseModel):
     ps_default_additional_css: list[str] = []
     ps_default_additional_script: list[str] = []
     ps_default_pic_format: Literal["jpeg", "png"] = "jpeg"
+    ps_default_use_periodic: bool = True
 
     @field_validator("ps_default_additional_css")
     def resolve_css_url(cls, v: list[str]):  # noqa: N805
@@ -92,11 +105,22 @@ template_config = get_plugin_config(TemplateConfig)
 collecting = set(
     flatten(COMPONENT_COLLECTORS[k] for k in template_config.ps_default_components),
 )
+if template_config.ps_default_use_periodic:
+    collecting = {(PERIODIC_COLLECTORS_MAP.get(x) or x) for x in collecting}
 
 
 @pic_template(collecting=collecting)
-async def default(collected: dict[str, Any], bg: "BgData", **_) -> bytes:
-    collected = {k: v[0] if isinstance(v, deque) else v for k, v in collected.items()}
+async def default(collected: dict[str, Any], bg: "BgBytesData", **_) -> bytes:
+    for k, v in collected.copy().items():
+        if (
+            template_config.ps_default_use_periodic
+            and k in PERIODIC_COLLECTORS_MAP_REVERSE
+        ):
+            del collected[k]
+            k = PERIODIC_COLLECTORS_MAP_REVERSE[k]
+        if isinstance(v, deque):
+            collected[k] = v[0]
+
     template = ENVIRONMENT.get_template("index.html.jinja")
     html = await template.render_async(d=collected, config=template_config)
 

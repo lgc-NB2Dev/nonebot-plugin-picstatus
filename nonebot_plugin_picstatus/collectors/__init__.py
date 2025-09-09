@@ -4,6 +4,7 @@ import time
 from abc import abstractmethod
 from collections import deque
 from collections.abc import Awaitable, Callable
+from contextlib import suppress
 from pathlib import Path
 from typing import Any, Generic, TypeVar
 from typing_extensions import override
@@ -108,7 +109,7 @@ async def enable_collectors(*names: str):
     for name in names:
         _enable_collector(name)
     await init_first_time_collectors()
-    await collect_perodic_collectors()
+    await setup_periodic_collectors_update_job()
 
 
 def functional_collector(cls: type[Collector], name: str | None = None):
@@ -139,11 +140,12 @@ def periodic_collector(name: str | None = None):
     return functional_collector(BasePeriodicCollector, name)
 
 
-class TimeBasedCounterCollector(BasePeriodicCollector[R], Generic[T, R]):
-    def __init__(self, size: int = config.ps_default_collect_cache_size) -> None:
-        super().__init__(size)
+class BaseTimeBasedCounterCollector(Collector[R, Any], Generic[T, R]):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self.last_obj: Undefined | T = Undefined()
         self.last_time: float = 0
+        self.normal_delay: float = 1
 
     @abstractmethod
     async def _calc(self, past: T, now: T, time_passed: float) -> R: ...
@@ -163,6 +165,26 @@ class TimeBasedCounterCollector(BasePeriodicCollector[R], Generic[T, R]):
         if isinstance(past, Undefined):
             raise SkipCollectError
         return await self._calc(past, self.last_obj, time_passed)
+
+
+class NormalTimeBasedCounterCollector(
+    BaseTimeBasedCounterCollector[T, R],
+    BaseNormalCollector[R],
+    Generic[T, R],
+):
+    @override
+    async def get(self) -> R:
+        with suppress(SkipCollectError):
+            await self._get()
+        await asyncio.sleep(self.normal_delay)
+        return await self._get()
+
+
+class PeriodicTimeBasedCounterCollector(
+    BaseTimeBasedCounterCollector[T, R],
+    BasePeriodicCollector[R],
+    Generic[T, R],
+): ...
 
 
 async def collect_all() -> dict[str, Any]:
@@ -189,12 +211,16 @@ async def init_first_time_collectors():
     )
 
 
-@scheduler.scheduled_job("interval", seconds=config.ps_collect_interval)
-async def collect_perodic_collectors():
-    await asyncio.gather(
-        *(
-            x.collect()
-            for x in enabled_collectors.values()
-            if isinstance(x, BasePeriodicCollector)
-        ),
-    )
+async def setup_periodic_collectors_update_job():
+    collectors = [
+        x for x in enabled_collectors.values() if isinstance(x, BasePeriodicCollector)
+    ]
+    if not collectors:
+        return
+    logger.debug("Setting up periodic collectors")
+
+    @scheduler.scheduled_job("interval", seconds=config.ps_collect_interval)
+    async def _do():
+        await asyncio.gather(*(x.collect() for x in collectors))
+
+    await _do()

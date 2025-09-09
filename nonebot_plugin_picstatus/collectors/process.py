@@ -6,7 +6,7 @@ import psutil
 
 from ..config import config
 from ..util import match_list_regexp
-from . import periodic_collector
+from . import normal_collector, periodic_collector
 
 
 @dataclass
@@ -16,8 +16,7 @@ class ProcessStatus:
     mem: int
 
 
-@periodic_collector()
-async def process_status() -> list[ProcessStatus]:
+async def get_process_status() -> list[ProcessStatus]:
     if not config.ps_proc_len:
         return []
 
@@ -56,3 +55,7 @@ async def process_status() -> list[ProcessStatus]:
     proc_list = [x for x in proc_list if x and (not isinstance(x, Exception))]
     proc_list.sort(key=sorter, reverse=True)
     return proc_list[: config.ps_proc_len]
+
+
+normal_collector("process_status")(get_process_status)
+periodic_collector("process_status_periodic")(get_process_status)

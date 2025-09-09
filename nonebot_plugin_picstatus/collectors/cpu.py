@@ -5,7 +5,7 @@ import psutil
 from cpuinfo import get_cpu_info
 from nonebot import logger
 
-from . import first_time_collector, periodic_collector
+from . import first_time_collector, normal_collector, periodic_collector
 
 
 @dataclass
@@ -42,16 +42,22 @@ async def cpu_count() -> int | None:
     return psutil.cpu_count(logical=False)
 
 
-@periodic_collector()
-async def cpu_percent() -> float:
+async def get_cpu_percent() -> float:
     return psutil.cpu_percent()
 
 
-@periodic_collector()
-async def cpu_freq() -> CpuFreq:
+normal_collector("cpu_percent")(get_cpu_percent)
+periodic_collector("cpu_percent_periodic")(get_cpu_percent)
+
+
+async def get_cpu_freq() -> CpuFreq:
     cpu_freq = psutil.cpu_freq()
     return CpuFreq(
         current=getattr(cpu_freq, "current", None),
         min=getattr(cpu_freq, "min", None),
         max=getattr(cpu_freq, "max", None),
     )
+
+
+normal_collector("cpu_freq")(get_cpu_freq)
+periodic_collector("cpu_freq_periodic")(get_cpu_freq)

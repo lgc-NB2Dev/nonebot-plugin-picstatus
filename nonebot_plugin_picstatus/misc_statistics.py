@@ -2,9 +2,13 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
+from cookit.loguru import log_exception_warning
 from nonebot import get_driver, logger
 from nonebot.adapters import Bot as BaseBot, Event as BaseEvent
 from nonebot.message import event_preprocessor
+from nonebot.typing import T_State
+from nonebot_plugin_alconna import image_fetch
+from nonebot_plugin_alconna.uniseg import Image
 from nonebot_plugin_uninfo import User, get_interface
 
 from .config import config
@@ -15,7 +19,7 @@ recv_num: dict[str, int] = {}
 send_num: dict[str, int] = {}
 
 bot_info_cache: dict[str, User] = {}
-bot_avatar_cache: dict[str, bytes] = {}
+bot_avatar_cache: dict[str, bytes | None] = {}
 
 driver = get_driver()
 
@@ -96,6 +100,22 @@ if config.ps_count_message_sent_event is not True:
             send_num[bot.self_id] += 1
 
 
+async def cache_bot_avatar(avatar: str, bot: BaseBot, event: BaseEvent, state: T_State):
+    try:
+        img = await image_fetch(event, bot, state, Image(url=avatar))
+    except Exception as e:
+        log_exception_warning(e, f"Failed to get avatar of bot {bot.self_id}")
+        return None
+    else:
+        if not img:
+            logger.warning(
+                f"Cannot get avatar of bot {bot.self_id}"
+                f" because image_fetch returned None",
+            )
+    bot_avatar_cache[bot.self_id] = img
+    return img
+
+
 async def cache_bot_info(bot: BaseBot):
     try:
         it = get_interface(bot)
@@ -105,6 +125,8 @@ async def cache_bot_info(bot: BaseBot):
     else:
         if info:
             bot_info_cache[bot.self_id] = info
+            return info
+    return None
 
 
 @driver.on_bot_connect

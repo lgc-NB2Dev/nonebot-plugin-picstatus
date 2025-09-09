@@ -9,7 +9,13 @@ from psutil._common import snetio
 
 from ..config import TestSiteCfg, config
 from ..util import match_list_regexp
-from . import TimeBasedCounterCollector, collector, normal_collector
+from . import (
+    BaseTimeBasedCounterCollector,
+    NormalTimeBasedCounterCollector,
+    PeriodicTimeBasedCounterCollector,
+    collector,
+    normal_collector,
+)
 
 
 @dataclass
@@ -36,8 +42,9 @@ class NetworkConnectionError:
 NetworkConnectionType: TypeAlias = NetworkConnectionOK | NetworkConnectionError
 
 
-@collector("network_io")
-class NetworkIOCollector(TimeBasedCounterCollector[dict[str, snetio], list[NetworkIO]]):
+class BaseNetworkIOCollector(
+    BaseTimeBasedCounterCollector[dict[str, snetio], list[NetworkIO]],
+):
     async def _calc(
         self,
         past: dict[str, snetio],
@@ -66,6 +73,20 @@ class NetworkIOCollector(TimeBasedCounterCollector[dict[str, snetio], list[Netwo
 
     async def _get_obj(self) -> dict[str, snetio]:
         return psutil.net_io_counters(pernic=True)
+
+
+@collector("network_io")
+class NormalDiskIOCollector(
+    BaseNetworkIOCollector,
+    NormalTimeBasedCounterCollector[dict[str, snetio], list[NetworkIO]],
+): ...
+
+
+@collector("network_io_periodic")
+class PeriodicDiskIOCollector(
+    BaseNetworkIOCollector,
+    PeriodicTimeBasedCounterCollector[dict[str, snetio], list[NetworkIO]],
+): ...
 
 
 @normal_collector()

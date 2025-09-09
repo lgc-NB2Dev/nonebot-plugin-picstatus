@@ -10,12 +10,12 @@ from nonebot import logger
 from ..config import config
 
 if TYPE_CHECKING:
-    from ..bg_provider import BgData
+    from ..bg_provider import BgBytesData
 
 
 class TemplateRendererKwargs(TypedDict):
     collected: dict[str, Any]
-    bg: "BgData"
+    bg: "BgBytesData"
 
 
 class TemplateRenderer(Protocol):

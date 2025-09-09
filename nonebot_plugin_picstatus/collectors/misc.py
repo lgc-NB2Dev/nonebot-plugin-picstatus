@@ -83,9 +83,12 @@ async def ps_version() -> str:
     return __version__
 
 
-@periodic_collector("time")
-async def time_str() -> str:
+async def get_time_str() -> str:
     return time.strftime("%Y-%m-%d %H:%M:%S")
+
+
+normal_collector("time")(get_time_str)
+periodic_collector("time_periodic")(get_time_str)
 
 
 @first_time_collector()

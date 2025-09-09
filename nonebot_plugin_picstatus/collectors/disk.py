@@ -6,7 +6,14 @@ from psutil._common import sdiskio, sdiskpart
 
 from ..config import config
 from ..util import match_list_regexp
-from . import TimeBasedCounterCollector, collector, periodic_collector
+from . import (
+    BaseTimeBasedCounterCollector,
+    NormalTimeBasedCounterCollector,
+    PeriodicTimeBasedCounterCollector,
+    collector,
+    normal_collector,
+    periodic_collector,
+)
 
 
 @dataclass
@@ -34,7 +41,7 @@ class DiskIO:
 
 
 @periodic_collector()
-async def disk_usage() -> list[DiskUsageType]:
+async def get_disk_usage() -> list[DiskUsageType]:
     def get_one(disk: sdiskpart) -> DiskUsageType | None:
         mountpoint = disk.mountpoint
 
@@ -69,8 +76,13 @@ async def disk_usage() -> list[DiskUsageType]:
     return usage
 
 
-@collector("disk_io")
-class DiskIOCollector(TimeBasedCounterCollector[dict[str, sdiskio], list[DiskIO]]):
+normal_collector("disk_usage")(get_disk_usage)
+periodic_collector("disk_usage_periodic")(get_disk_usage)
+
+
+class BaseDiskIOCollector(
+    BaseTimeBasedCounterCollector[dict[str, sdiskio], list[DiskIO]],
+):
     async def _calc(
         self,
         past: dict[str, sdiskio],
@@ -99,3 +111,17 @@ class DiskIOCollector(TimeBasedCounterCollector[dict[str, sdiskio], list[DiskIO]
 
     async def _get_obj(self) -> dict[str, sdiskio]:
         return psutil.disk_io_counters(perdisk=True)
+
+
+@collector("disk_io")
+class NormalDiskIOCollector(
+    BaseDiskIOCollector,
+    NormalTimeBasedCounterCollector[dict[str, sdiskio], list[DiskIO]],
+): ...
+
+
+@collector("disk_io_periodic")
+class PeriodicDiskIOCollector(
+    BaseDiskIOCollector,
+    PeriodicTimeBasedCounterCollector[dict[str, sdiskio], list[DiskIO]],
+): ...

@@ -3,24 +3,23 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 from urllib.parse import urlencode
 
-from cookit import auto_convert_byte, make_append_obj_to_dict_deco
+from cookit import auto_convert_byte
 from cookit.jinja import all_filters
+from cookit.jinja.filters import cookit_global_filter
 from cookit.pw import CKRouterFunc, RouterGroup, make_real_path_router
 from cookit.pw.loguru import log_router_err
 from nonebot import logger
-from nonebot.matcher import current_bot, current_event, current_matcher
-from nonebot_plugin_alconna import Image, image_fetch
 from yarl import URL
 
 from ..config import DEFAULT_AVATAR_PATH, config
-from ..misc_statistics import bot_avatar_cache, bot_info_cache
+from ..misc_statistics import bot_avatar_cache
 from ..util import format_cpu_freq
 
 if TYPE_CHECKING:
     import jinja2
     from playwright.async_api import Request, Route
 
-    from ..bg_provider import BgData
+    from ..bg_provider import BgBytesData
 
 TC = TypeVar("TC", bound=Callable[..., Any])
 
@@ -80,26 +79,6 @@ async def _(route: "Route", request: "Request", **_):
         await route.fulfill(body=bot_avatar_cache[self_id])
         return
 
-    if (cache := bot_info_cache.get(self_id)) and (avatar := cache.avatar):
-        try:
-            img = await image_fetch(
-                current_event.get(),
-                current_bot.get(),
-                current_matcher.get().state,
-                Image(url=avatar),
-            )
-        except Exception as e:
-            logger.warning(
-                f"Error when getting bot avatar, fallback to default: "
-                f"{e.__class__.__name__}: {e}",
-            )
-        else:
-            if img:
-                bot_avatar_cache[self_id] = img
-                await route.fulfill(body=img)
-                return
-            logger.warning("image_fetch returned None")
-
     data = (
         config.ps_default_avatar
         if config.ps_default_avatar.is_file()
@@ -124,7 +103,7 @@ def add_root_router(router_group: RouterGroup, html: str):
         await route.fulfill(content_type="text/html", body=html)
 
 
-def add_background_router(router_group: RouterGroup, bg: "BgData"):
+def add_background_router(router_group: RouterGroup, bg: "BgBytesData"):
     @router_group.router(f"{ROUTE_URL}/api/background")
     @log_router_err()
     async def _(route: "Route", **_):
@@ -135,14 +114,12 @@ def add_background_router(router_group: RouterGroup, bg: "BgData"):
 
 # region jinja
 
-global_jinja_filters: dict[str, Callable] = all_filters.copy()
 
-
-jinja_filter = make_append_obj_to_dict_deco(global_jinja_filters)
+jinja_filter = type(cookit_global_filter)(all_filters.copy())
 
 
 def register_global_filter_to(env: "jinja2.Environment"):
-    env.filters.update(global_jinja_filters)
+    env.filters.update(jinja_filter.data)
 
 
 jinja_filter(format_cpu_freq)

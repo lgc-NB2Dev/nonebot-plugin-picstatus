@@ -31,7 +31,7 @@ require("nonebot_plugin_htmlrender")
 from nonebot_plugin_htmlrender import get_new_page
 
 if TYPE_CHECKING:
-    from nonebot_plugin_picstatus.bg_provider import BgData
+    from nonebot_plugin_picstatus.bg_provider import BgBytesData
 
 RES_DIR = Path(__file__).parent / "res"
 
@@ -78,7 +78,7 @@ template_config = get_plugin_config(TemplateConfig)
         "time_counter",
     },
 )
-async def example_template(collected: dict[str, Any], bg: "BgData", **_):
+async def example_template(collected: dict[str, Any], bg: "BgBytesData", **_):
     template = template_env.get_template("index.html.jinja")
     html = await template.render_async(d=collected, config=template_config)
 

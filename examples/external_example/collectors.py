@@ -2,7 +2,9 @@ import random
 from typing_extensions import override
 
 from nonebot_plugin_picstatus.collectors import (
-    TimeBasedCounterCollector,
+    BaseTimeBasedCounterCollector,
+    NormalTimeBasedCounterCollector,
+    PeriodicTimeBasedCounterCollector,
     collector,
     first_time_collector,
     normal_collector,
@@ -73,17 +75,12 @@ async def periodic_counter():
 # region 4. TimeBasedCounterCollector
 
 
-# 该 collector 基于 PeriodicCollector
-# 它会记录该次调用与上次调用的时间间隔
-# 你可以根据这段时间间隔来计算你希望展示并缓存的值
+# 它可以根据该次调用与上次调用的时间间隔来计算返回值
 # 这对展示 IO 速度等数据可能会很有帮助
 
 
 # 使用此 collector 你需要继承两个 abstract method
-# 并使用 collector 装饰器注册，注意在这里 collector 名称必须手动指定
-# 你也可以使用 collector 装饰器来注册上述 collector，不过具体操作请自行看插件源码理解
-@collector("time_counter")
-class TestTimeBasedCounter(TimeBasedCounterCollector[int, str]):
+class BaseTestTimeBasedCounter(BaseTimeBasedCounterCollector[int, str]):
     @override
     async def _calc(self, past: int, now: int, time_passed: float) -> str:
         """
@@ -103,6 +100,26 @@ class TestTimeBasedCounter(TimeBasedCounterCollector[int, str]):
     async def _get_obj(self) -> int:
         """此方法返回传入 _calc 方法中的原始结果"""
         return random.randint(0, 100)
+
+
+# 其下有两个分支，Normal 与 Periodic
+# Normal 不会在后台持续收集数据，而 Periodic 会
+# 你可以用一个 Base 同时派生出 Normal 与 Periodic 两个类
+# 使用 @collector 装饰器来注册
+
+
+@collector("time_counter")
+class NormalTestTimeBasedCounter(
+    BaseTestTimeBasedCounter,
+    NormalTimeBasedCounterCollector[int, str],
+): ...
+
+
+@collector("time_counter_periodic")
+class PeriodicTestTimeBasedCounter(
+    BaseTestTimeBasedCounter,
+    PeriodicTimeBasedCounterCollector[int, str],
+): ...
 
 
 # endregion

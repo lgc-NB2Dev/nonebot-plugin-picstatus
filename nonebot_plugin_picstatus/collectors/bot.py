@@ -7,12 +7,7 @@ from nonebot import get_bots, logger
 from nonebot.matcher import current_bot
 
 from ..config import config
-from ..misc_statistics import (
-    bot_connect_time,
-    bot_info_cache,
-    recv_num,
-    send_num,
-)
+from ..misc_statistics import bot_connect_time, bot_info_cache, recv_num, send_num
 from ..util import format_timedelta
 from . import normal_collector
 
