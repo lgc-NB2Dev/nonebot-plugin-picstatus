@@ -1,6 +1,7 @@
 import asyncio
 
 from cookit.loguru import warning_suppress
+from cookit.nonebot.alconna import extract_reply_msg
 from nonebot import logger, on_command
 from nonebot.adapters import Bot as BaseBot, Event as BaseEvent, Message as BaseMessage
 from nonebot.matcher import current_bot, current_event, current_matcher
@@ -8,7 +9,7 @@ from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
 from nonebot.rule import Rule, to_me
 from nonebot.typing import T_State
-from nonebot_plugin_alconna.uniseg import Image, Reply, UniMessage, UniMsg, image_fetch
+from nonebot_plugin_alconna.uniseg import Image, OriginalUniMsg, UniMessage, image_fetch
 
 from .bg_provider import BgBytesData, bg_preloader
 from .collectors import collect_all
@@ -38,15 +39,7 @@ stat_matcher = on_command(
 
 
 async def get_pic_from_msg(msg: UniMessage) -> BgBytesData | None:
-    msg = (
-        r
-        if (
-            Reply in msg
-            and isinstance((r_org := msg[Reply, 0].msg), BaseMessage)
-            and Image in (r := UniMessage.of(message=r_org))
-        )
-        else msg
-    )
+    msg = r if ((r := extract_reply_msg(msg)) and Image in r) else msg
     if Image not in msg:
         return None
     img = msg[Image, 0]
@@ -62,7 +55,7 @@ async def get_pic_from_msg(msg: UniMessage) -> BgBytesData | None:
 
 
 @stat_matcher.handle()
-async def _(bot: BaseBot, event: BaseEvent, state: T_State, msg: UniMsg):
+async def _(bot: BaseBot, event: BaseEvent, state: T_State, msg: OriginalUniMsg):
     if (
         (bot.self_id not in bot_avatar_cache)
         and (info := bot_info_cache.get(bot.self_id))
