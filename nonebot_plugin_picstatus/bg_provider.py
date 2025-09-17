@@ -1,9 +1,9 @@
 import asyncio as aio
 import mimetypes
 import random
+import sys
 import time
 from abc import ABC, abstractmethod
-from asyncio.taskgroups import TaskGroup
 from collections.abc import AsyncIterable, Callable
 from math import floor
 from pathlib import Path
@@ -15,6 +15,11 @@ from httpx import AsyncClient, Response
 from nonebot import logger
 
 from .config import BG_PRELOAD_CACHE_DIR, DEFAULT_BG_PATH, config
+
+if sys.version_info < (3, 11):
+    from asyncio.taskgroups import TaskGroup
+else:
+    from taskgroup import TaskGroup
 
 
 class BgBytesData(NamedTuple):
