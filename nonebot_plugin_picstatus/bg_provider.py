@@ -16,7 +16,7 @@ from nonebot import logger
 
 from .config import BG_PRELOAD_CACHE_DIR, DEFAULT_BG_PATH, config
 
-if sys.version_info < (3, 11):
+if sys.version_info >= (3, 11):
     from asyncio.taskgroups import TaskGroup
 else:
     from taskgroup import TaskGroup
