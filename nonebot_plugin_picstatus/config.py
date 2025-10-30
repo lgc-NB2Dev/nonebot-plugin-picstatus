@@ -4,6 +4,7 @@ from typing import Literal
 
 from cookit.nonebot.localstore import ensure_localstore_path_config
 from nonebot import get_plugin_config
+from nonebot.compat import type_validate_python
 from nonebot_plugin_localstore import get_plugin_cache_dir
 from pydantic import AnyHttpUrl, BaseModel, Field
 
@@ -91,15 +92,14 @@ class ConfigModel(BaseModel):
     ps_ignore_0b_net: bool = False
     ps_sort_nets: bool = True
     # connection_test
-    ps_test_sites: list[TestSiteCfg] = [
-        TestSiteCfg(
-            name="百度",
-            url=AnyHttpUrl("https://www.baidu.com/"),
+    ps_test_sites: list[TestSiteCfg] = [  # v1 compat #59
+        type_validate_python(
+            TestSiteCfg,
+            {"name": "百度", "url": "https://www.baidu.com/"},
         ),
-        TestSiteCfg(
-            name="Google",
-            url=AnyHttpUrl("https://www.google.com/"),
-            use_proxy=True,
+        type_validate_python(
+            TestSiteCfg,
+            {"name": "Google", "url": "https://www.google.com/", "use_proxy": True},
         ),
     ]
     ps_sort_sites: bool = True

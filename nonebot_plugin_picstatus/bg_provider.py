@@ -10,9 +10,10 @@ from pathlib import Path
 from typing import Generic, NamedTuple, ParamSpec, TypeAlias, TypedDict, TypeVar
 from typing_extensions import override
 
+from cookit.common import race
 from cookit.loguru import warning_suppress
 from httpx import AsyncClient, Response
-from nonebot import logger
+from nonebot import get_driver, logger
 
 from .config import BG_PRELOAD_CACHE_DIR, DEFAULT_BG_PATH, config
 
@@ -95,7 +96,7 @@ def resp_to_bg_data(resp: Response):
     )
 
 
-class CoIterator(Generic[T], ABC):
+class CoIterator(ABC, Generic[T]):
     def __init__(self):
         self.queue = aio.Queue[T | None]()
 
@@ -298,77 +299,113 @@ async def get_one_fallback() -> BgBytesData:
 
 class BgPreloader:
     def __init__(self, preload_count: int):
-        if preload_count < 1:
-            raise ValueError("preload_count must be greater than or equals 1")
+        # if preload_count < 1:
+        #     raise ValueError("preload_count must be greater than or equals 1")
         self.preload_count = preload_count
         self.background_queue = aio.Queue[BgData]()
-        self.current_load_task: aio.Task | None = None
+        self.current_load_task_main: aio.Task | None = None
         self.consumed_in_loading: bool = False
+        self.image_got_signal = aio.Event()
+        self.fire_tasks: set[aio.Task] = set()
 
     # we allow fetch_bg return less image than we require
-    async def preload_task(self, count: int):
-        logger.debug(f"Preload task started, will preload {count} images")
+    async def preload_task(
+        self,
+        count: int,
+        fire: bool = False,
+        fire_done_signal: aio.Event | None = None,
+    ):
+        logger.debug(f"Preload task started, will preload {count} images, {fire=}")
         try:
             async for x in fetch_bg(count):
                 logger.debug("Got one image")
-                if self.preload_count > 0:
+                if self.preload_count > 0 or (
+                    fire_done_signal and fire_done_signal.is_set()
+                ):
                     x = cache_bg(x) if isinstance(x, BgBytesData) else x
                 await self.background_queue.put(x)
+                self.image_got_signal.set()
+                self.image_got_signal.clear()
         except Exception:
             logger.exception("Unexpected error occurred in preload task")
         else:
             logger.debug("Preload task finished")
-        finally:
-            if (
-                self.consumed_in_loading
-                or self.background_queue.qsize() < self.preload_count
-            ):
-                self.consumed_in_loading = False
-                self.start_preload()
-            else:
-                self.current_load_task = None
 
-    def start_preload(self):
-        count = self.preload_count - self.background_queue.qsize()
-        if count > 0:
-            task = aio.create_task(self.preload_task(count))
-            self.current_load_task = task
+        if fire:
+            return
+        if (
+            self.consumed_in_loading
+            or self.background_queue.qsize() < self.preload_count
+        ):
+            self.consumed_in_loading = False
+            self.start_preload()
         else:
-            logger.debug("Counted image count equals 0, skip preload")
+            self.current_load_task_main = None
+
+    def start_preload(self, force: bool = False):
+        count = self.preload_count - self.background_queue.qsize()
+        if count <= 0 and not force:
+            logger.debug(
+                "Current background queue size meets preload count, skip preload",
+            )
+            return
+        task = aio.create_task(self.preload_task(count))
+        self.current_load_task_main = task
 
     def set_defer_preload(self):
-        if self.current_load_task:
+        if self.current_load_task_main:
+            logger.debug("Main preload task already running, set flag")
             self.consumed_in_loading = True
         else:
             self.start_preload()
 
+    async def _get_on_fire(self) -> BgBytesData:
+        task_done_signal = aio.Event()
+        fire_task = aio.create_task(
+            self.preload_task(1, fire=True, fire_done_signal=task_done_signal),
+        )
+        fire_task.add_done_callback(lambda _: task_done_signal.set())
+        fire_task.add_done_callback(lambda _: self.fire_tasks.discard(fire_task))
+        self.fire_tasks.add(fire_task)
+        try:
+            await race(
+                # self.image_got_signal.wait(),  # lazy to handle this racing condition now
+                task_done_signal.wait(),
+                aio.sleep(15),
+            )
+        finally:
+            task_done_signal.set()
+            # fire_task.cancel()  # should we cancel here? i'm letting it cache to queue
+
+        if not self.background_queue.empty():
+            bg = await self.background_queue.get()
+            self.set_defer_preload()
+            if (not isinstance(bg, BgFileData)) or (bg := read_cached_bg_file(bg)):
+                return bg
+
+        logger.error("Unable to get an background image, falling back to local")
+        return await get_one_fallback()
+
     async def get(self) -> BgBytesData:
         self.set_defer_preload()
 
-        while True:
-            try:
-                bg = await aio.wait_for(self.background_queue.get(), timeout=15)
-            except aio.TimeoutError:
-                logger.error(
-                    "Wait background hard timeout 15s gone"
-                    ", probably encountered corner case, fallback to local",
-                )
-                self.set_defer_preload()
-                return await get_one_fallback()
-
+        while not self.background_queue.empty():
+            bg = await self.background_queue.get()
+            self.set_defer_preload()
             if (not isinstance(bg, BgFileData)) or (bg := read_cached_bg_file(bg)):
-                self.set_defer_preload()
                 return bg
 
-            # we can safely ignore errors from queue
-            # because they are properly handled in task done callback
-            # here we consume all remaining resources until got a usable bg
-            if (not self.background_queue.empty()) and self.current_load_task:
-                continue
-
-            logger.error("Unable to get a usable background, fallback to local")
-            self.set_defer_preload()
-            return await get_one_fallback()
+        # normally all items in queue should be valid
+        # if they not, we should fetch
+        return await self._get_on_fire()
 
 
 bg_preloader = BgPreloader(config.ps_bg_preload_count)
+
+driver = get_driver()
+
+
+@driver.on_shutdown
+async def _():
+    for t in bg_preloader.fire_tasks:
+        t.cancel()
