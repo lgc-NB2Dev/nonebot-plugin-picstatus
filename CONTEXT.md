@@ -24,8 +24,16 @@ A one-candidate, immediate retrieval started when no preloaded background is
 available.
 
 **Late completion**:
-A fire retrieval result that arrives after its original request has timed out
-and remains available to a later request.
+A fire retrieval result that arrives after its return gate but before its fire
+deadline, and remains available to a later request.
+
+**Fire return gate**:
+The configured period for which a cache-miss caller waits for a fire retrieval
+candidate before receiving a local fallback.
+
+**Fire deadline**:
+The configured maximum lifetime of a fire retrieval. A retrieval that has not
+produced a candidate by this deadline is cancelled.
 
 **Retry budget**:
 The maximum consecutive routine preload attempts that finish without a

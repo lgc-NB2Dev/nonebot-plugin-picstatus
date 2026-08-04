@@ -22,6 +22,8 @@ DEFAULT_BG_PATH = ASSETS_PATH / "default_bg.webp"
 DEFAULT_AVATAR_PATH = ASSETS_PATH / "default_avatar.webp"
 
 ProcSortByType = Literal["cpu", "mem"]
+DEFAULT_BG_FIRE_RETURN_TIMEOUT = 15
+DEFAULT_BG_FIRE_TASK_TIMEOUT = 60
 
 
 class TestSiteCfg(BaseModel):
@@ -53,6 +55,8 @@ class ConfigModel(BaseModel):
     ps_bg_provider: str = "loli"
     ps_bg_preload_count: int = 2
     ps_bg_preload_retry_limit: int = 3
+    ps_bg_fire_return_timeout: int = DEFAULT_BG_FIRE_RETURN_TIMEOUT
+    ps_bg_fire_task_timeout: int = DEFAULT_BG_FIRE_TASK_TIMEOUT
     ps_bg_lolicon_r18_type: Literal[0, 1, 2] = 0
     ps_bg_local_path: Path = DEFAULT_BG_PATH
     ps_bg_url: str | None = None
@@ -126,10 +130,52 @@ class ConfigModel(BaseModel):
             raise ValueError("PS_BG_PRELOAD_RETRY_LIMIT must be non-negative")
         return v
 
+    @field_validator("ps_bg_fire_return_timeout", mode="after")
+    def validate_bg_fire_return_timeout(cls, v: int) -> int:  # noqa: N805
+        if v <= 0:
+            raise ValueError("PS_BG_FIRE_RETURN_TIMEOUT must be positive")
+        return v
+
+    @field_validator("ps_bg_fire_task_timeout", mode="after")
+    def validate_bg_fire_task_timeout(cls, v: int) -> int:  # noqa: N805
+        if v <= 0:
+            raise ValueError("PS_BG_FIRE_TASK_TIMEOUT must be positive")
+        return v
+
+    @field_validator("ps_collect_interval", mode="after")
+    def validate_ps_collect_interval(cls, v: int) -> int:  # noqa: N805
+        if v <= 0:
+            raise ValueError("PS_COLLECT_INTERVAL must be positive")
+        return v
+
+    @field_validator("ps_default_collect_cache_size", mode="after")
+    def validate_ps_default_collect_cache_size(cls, v: int) -> int:  # noqa: N805
+        if v < 1:
+            raise ValueError("PS_DEFAULT_COLLECT_CACHE_SIZE must be at least 1")
+        return v
+
+    @field_validator("ps_collect_cache_size", mode="after")
+    def validate_ps_collect_cache_size(cls, v: dict[str, int]) -> dict[str, int]:  # noqa: N805
+        if k := next((k for k, v in v.items() if v < 1), None):
+            raise ValueError(f"PS_COLLECT_CACHE_SIZE for '{k}' must be at least 1")
+        return v
+
     @model_validator(mode="after")
     def validate_paths(cls, values: dict) -> dict:  # noqa: N805
         if values.get("ps_bg_provider") == "url" and not values.get("ps_bg_url"):
             raise ValueError("PS_BG_URL is not set while PS_BG_PROVIDER is 'url'")
+        return_timeout = values.get(
+            "ps_bg_fire_return_timeout",
+            DEFAULT_BG_FIRE_RETURN_TIMEOUT,
+        )
+        task_timeout = values.get(
+            "ps_bg_fire_task_timeout",
+            DEFAULT_BG_FIRE_TASK_TIMEOUT,
+        )
+        if task_timeout < return_timeout:
+            raise ValueError(
+                "PS_BG_FIRE_TASK_TIMEOUT must not precede PS_BG_FIRE_RETURN_TIMEOUT",
+            )
         return values
 
 

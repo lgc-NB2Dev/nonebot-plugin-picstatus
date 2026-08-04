@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0004
+---
+
 # Fire Retrievals Retain Late Results
 
 Cache misses start a one-candidate fire retrieval so the current request does

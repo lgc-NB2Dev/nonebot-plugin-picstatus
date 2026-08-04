@@ -317,8 +317,11 @@ class BgPreloader:
         self.consumed_in_loading: bool = False
         self.fire_tasks: set[aio.Task] = set()
         self.preload_retry_limit = config.ps_bg_preload_retry_limit
+        self.fire_return_timeout = config.ps_bg_fire_return_timeout
+        self.fire_task_timeout = config.ps_bg_fire_task_timeout
         self.preload_failures = 0
         self.preload_suspended = False
+        self.closed = False
 
     def routine_preload_allowed(self) -> bool:
         provider = registered_bg_providers.get(config.ps_bg_provider)
@@ -353,7 +356,6 @@ class BgPreloader:
         self,
         count: int,
         fire: bool = False,
-        fire_request_finished: aio.Event | None = None,
         fire_result: aio.Future[BgData | None] | None = None,
     ):
         logger.debug(f"Preload task started, will preload {count} images, {fire=}")
@@ -363,19 +365,14 @@ class BgPreloader:
             async for x in fetch_bg(count, fallback_on_error=fire):
                 logger.debug("Got one image")
                 got_candidate = True
-                if (
-                    fire
-                    and fire_result is not None
-                    and not fire_result.done()
-                    and not (fire_request_finished and fire_request_finished.is_set())
-                ):
+                if fire and fire_result is not None and not fire_result.done():
                     fire_result.set_result(x)
-                    continue
-                if self.preload_count > 0 or (
-                    fire_request_finished and fire_request_finished.is_set()
-                ):
+                    return
+                if self.preload_count > 0 or (fire and fire_result is not None):
                     x = cache_bg(x) if isinstance(x, BgBytesData) else x
                 await self.background_queue.put(x)
+                if fire:
+                    return
         except Exception as e:
             exception = e
         else:
@@ -404,6 +401,9 @@ class BgPreloader:
             self.current_load_task_main = None
 
     def start_preload(self, force: bool = False):
+        if self.closed:
+            logger.debug("Background preloader is closed, skip routine preload")
+            return
         if self.preload_count == 0:
             logger.debug("Routine background preload disabled by a zero preload target")
             return
@@ -430,35 +430,39 @@ class BgPreloader:
             self.start_preload()
 
     async def _get_on_fire(self) -> BgBytesData:
-        request_finished = aio.Event()
         loop = aio.get_running_loop()
         result: aio.Future[BgData | None] = loop.create_future()
         timeout_expired = False
 
-        async def timeout_result() -> None:
+        def expire_return_gate() -> None:
             nonlocal timeout_expired
-            await aio.sleep(15)
             if not result.done():
                 timeout_expired = True
                 result.set_result(None)
 
-        fire_task = aio.create_task(
-            self.preload_task(
-                1,
-                fire=True,
-                fire_request_finished=request_finished,
-                fire_result=result,
-            ),
-        )
-        fire_task.add_done_callback(lambda _: self.fire_tasks.discard(fire_task))
+        async def run_fire_task() -> None:
+            try:
+                await aio.wait_for(
+                    self.preload_task(1, fire=True, fire_result=result),
+                    timeout=self.fire_task_timeout,
+                )
+            except TimeoutError:
+                logger.warning("Fire background retrieval exceeded its task deadline")
+
+        fire_task = aio.create_task(run_fire_task())
+
+        def finish_fire_task(task: aio.Task) -> None:
+            self.fire_tasks.discard(task)
+            if not result.done():
+                result.set_result(None)
+
+        fire_task.add_done_callback(finish_fire_task)
         self.fire_tasks.add(fire_task)
-        timeout_task = aio.create_task(timeout_result())
+        return_gate = loop.call_later(self.fire_return_timeout, expire_return_gate)
         try:
             bg = await result
         finally:
-            request_finished.set()
-            timeout_task.cancel()
-            # Do not cancel the task: a late result is retained for the next request.
+            return_gate.cancel()
 
         if bg is not None and (
             (not isinstance(bg, BgFileData)) or (bg := read_cached_bg_file(bg))
@@ -472,6 +476,8 @@ class BgPreloader:
         return await get_one_fallback()
 
     async def get(self) -> BgBytesData:
+        if self.closed:
+            return await get_one_fallback()
         self.resume_deferred_preload()
         self.set_defer_preload()
 
@@ -485,6 +491,20 @@ class BgPreloader:
         # if they not, we should fetch
         return await self._get_on_fire()
 
+    async def close(self) -> None:
+        if self.closed:
+            return
+        self.closed = True
+        tasks = set(self.fire_tasks)
+        if self.current_load_task_main is not None:
+            tasks.add(self.current_load_task_main)
+        for task in tasks:
+            task.cancel()
+        if tasks:
+            await aio.gather(*tasks, return_exceptions=True)
+        self.fire_tasks.difference_update(tasks)
+        self.current_load_task_main = None
+
 
 bg_preloader = BgPreloader(config.ps_bg_preload_count)
 
@@ -493,5 +513,4 @@ driver = get_driver()
 
 @driver.on_shutdown
 async def _():
-    for t in bg_preloader.fire_tasks:
-        t.cancel()
+    await bg_preloader.close()

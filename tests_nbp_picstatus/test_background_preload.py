@@ -95,6 +95,42 @@ def test_defaults_the_preload_retry_limit_to_three(picstatus_loaded: None) -> No
     assert config.ps_bg_preload_retry_limit == 3
 
 
+def test_defaults_fire_retrieval_timeouts(picstatus_loaded: None) -> None:
+    """Fire retrievals have separate return-gate and task-deadline defaults."""
+    from nonebot_plugin_picstatus.config import ConfigModel
+
+    config = ConfigModel(superusers=set(), nickname=set())
+
+    assert config.ps_bg_fire_return_timeout == 15
+    assert config.ps_bg_fire_task_timeout == 60
+
+
+@pytest.mark.parametrize(
+    ("return_timeout", "task_timeout"),
+    [
+        (0, 60),
+        (15, 0),
+        (61, 60),
+        (15, 14),
+    ],
+)
+def test_rejects_invalid_fire_retrieval_timeouts(
+    picstatus_loaded: None,
+    return_timeout: int,
+    task_timeout: int,
+) -> None:
+    """Fire timeouts must be positive and the task deadline cannot precede its gate."""
+    from nonebot_plugin_picstatus.config import ConfigModel
+
+    with pytest.raises(ValidationError):
+        ConfigModel(
+            superusers=set(),
+            nickname=set(),
+            ps_bg_fire_return_timeout=return_timeout,
+            ps_bg_fire_task_timeout=task_timeout,
+        )
+
+
 def test_requires_a_url_for_the_url_provider(picstatus_loaded: None) -> None:
     """The URL provider is rejected before any background request is made."""
     from nonebot_plugin_picstatus.config import ConfigModel
@@ -274,14 +310,10 @@ async def test_retains_a_late_fire_retrieval_for_the_next_request(
     """A fire retrieval that outlives its caller caches its later result."""
     from nonebot_plugin_picstatus import bg_provider as bg
 
-    original_sleep = asyncio.sleep
     ready = asyncio.Event()
     release = asyncio.Event()
     expected = bg.BgBytesData(b"late", "image/webp")
     monkeypatch.setattr(bg, "registered_bg_providers", {})
-
-    async def immediate_sleep(_: float) -> None:
-        return None
 
     @bg.bg_provider("delayed")
     async def delayed(num: int):
@@ -289,18 +321,17 @@ async def test_retains_a_late_fire_retrieval_for_the_next_request(
         await release.wait()
         yield expected
 
-    monkeypatch.setattr(bg.aio, "sleep", immediate_sleep)
     monkeypatch.setattr(bg.config, "ps_bg_provider", "delayed")
     preloader = bg.BgPreloader(0)
+    preloader.fire_return_timeout = 0
     first_request = asyncio.create_task(preloader.get())
 
     try:
         await ready.wait()
-        await first_request
+        await asyncio.wait_for(first_request, timeout=0.1)
         fire_task = next(iter(preloader.fire_tasks))
         release.set()
         await fire_task
-        await original_sleep(0)
 
         assert await preloader.get() == expected
     finally:
@@ -334,6 +365,8 @@ async def test_returns_the_first_fire_candidate_without_waiting_for_generator_en
     await first_candidate_ready.wait()
     try:
         assert await asyncio.wait_for(request, timeout=0.1) == expected
+        await asyncio.sleep(0)
+        assert not preloader.fire_tasks
     finally:
         release.set()
         await asyncio.gather(request, return_exceptions=True)
@@ -639,4 +672,95 @@ async def test_provider_exceptions_consume_the_routine_retry_budget(
         await asyncio.wait_for(third_attempt.wait(), timeout=0.1)
         assert attempts == 3
     finally:
+        await cancel_preloader_tasks(preloader)
+
+
+@pytest.mark.asyncio
+async def test_cancels_a_fire_task_that_misses_its_deadline(
+    picstatus_loaded: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A fire retrieval without a candidate is cancelled at its task deadline."""
+    from nonebot_plugin_picstatus import bg_provider as bg
+
+    started = asyncio.Event()
+    cancelled = asyncio.Event()
+    never = asyncio.Event()
+    monkeypatch.setattr(bg, "registered_bg_providers", {})
+
+    @bg.bg_provider("stalled")
+    async def stalled(num: int):
+        try:
+            started.set()
+            await never.wait()
+            yield bg.create_none_bg()
+        finally:
+            cancelled.set()
+
+    monkeypatch.setattr(bg.config, "ps_bg_provider", "stalled")
+    preloader = bg.BgPreloader(0)
+    preloader.fire_return_timeout = 0
+    preloader.fire_task_timeout = 1
+    request = asyncio.create_task(preloader.get())
+
+    try:
+        await started.wait()
+        assert (await asyncio.wait_for(request, timeout=0.1)).data is not None
+        await asyncio.wait_for(cancelled.wait(), timeout=1.1)
+        await asyncio.sleep(0)
+        assert not preloader.fire_tasks
+    finally:
+        never.set()
+        await cancel_preloader_tasks(preloader)
+
+
+@pytest.mark.asyncio
+async def test_close_cancels_routine_and_fire_preloading(
+    picstatus_loaded: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Closing a preloader cancels and waits for routine and fire retrieval tasks."""
+    from nonebot_plugin_picstatus import bg_provider as bg
+
+    routine_started = asyncio.Event()
+    fire_started = asyncio.Event()
+    cancelled = asyncio.Event()
+    never = asyncio.Event()
+    calls = 0
+    active_tasks = 0
+    monkeypatch.setattr(bg, "registered_bg_providers", {})
+
+    @bg.bg_provider("stalled")
+    async def stalled(num: int):
+        nonlocal active_tasks, calls
+        calls += 1
+        active_tasks += 1
+        if calls == 1:
+            routine_started.set()
+        else:
+            fire_started.set()
+        try:
+            await never.wait()
+            yield bg.create_none_bg()
+        finally:
+            active_tasks -= 1
+            if active_tasks == 0:
+                cancelled.set()
+
+    monkeypatch.setattr(bg.config, "ps_bg_provider", "stalled")
+    preloader = bg.BgPreloader(1)
+    preloader.start_preload()
+    request = asyncio.create_task(preloader.get())
+
+    try:
+        await routine_started.wait()
+        await fire_started.wait()
+        await preloader.close()
+
+        assert preloader.current_load_task_main is None
+        assert not preloader.fire_tasks
+        await asyncio.wait_for(cancelled.wait(), timeout=0.1)
+        assert (await asyncio.wait_for(request, timeout=0.1)).data is not None
+    finally:
+        never.set()
         await cancel_preloader_tasks(preloader)

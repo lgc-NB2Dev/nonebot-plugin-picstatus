@@ -43,10 +43,10 @@ async def get_ob11_msg_num(bot: "BaseBot") -> tuple[int | None, int | None]:
     if not bot_stat:
         return None, None
 
-    msg_rec = bot_stat.get("message_received") or bot_stat.get(
-        "MessageReceived",
-    )
-    msg_sent = bot_stat.get("message_sent") or bot_stat.get("MessageSent")
+    if (msg_rec := bot_stat.get("message_received")) is None:
+        msg_rec = bot_stat.get("MessageReceived")
+    if (msg_sent := bot_stat.get("message_sent")) is None:
+        msg_sent = bot_stat.get("MessageSent")
     return msg_rec, msg_sent
 
 

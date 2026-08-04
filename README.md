@@ -185,11 +185,24 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ### 2.3.0
 
-将 nonebot-plugin-picstatus-ng 的更改合并至主线，感谢 @wyf9
-
-- 修复 psutil 新版本的导入错误
-- 新增 `PS_BG_PROVIDER=url`，配置 `PS_BG_URL` 为图片 URL 即可使用外部图片 API 作为背景图来源 (仅支持 static / 302 返回，不支持 json 返回)
-- 在使用传统方式获取 Bot 头像失败后尝试直接从 <https://q.qlogo.cn/headimg_dl?dst_uin={bot.self_id}&spec=160> 拉取
+- 将 nonebot-plugin-picstatus-ng 的更改合并至主线，感谢 [@wyf9](https://github.com/wyf9)：
+  - 修复 psutil 新版本的导入错误
+  - 新增 `PS_BG_PROVIDER=url`，配置 `PS_BG_URL` 为图片 URL 即可使用外部图片 API 作为背景图来源 (仅支持 static / 302 返回，不支持 json 返回)
+  - 在使用传统方式获取 Bot 头像失败后尝试直接从 q.qlogo.cn 拼 URL 拉取
+- 完善背景图预载：
+  - 新特性：
+    - 新增 `PS_BG_PRELOAD_RETRY_LIMIT` 用于控制预载失败后的重试次数（默认 `3`），上限后等待下次获取背景图时恢复，空结果或异常不再无限重试。
+    - 新增 `PS_BG_FIRE_RETURN_TIMEOUT`（默认 `15` 秒）和 `PS_BG_FIRE_TASK_TIMEOUT`（默认 `60` 秒），分别控制即时请求的返回门禁和后台任务截止时间。
+    - provider 支持以 `@bg_provider(no_preload=True)` 禁用预载。
+  - 修复遗留问题：
+    - 修正 Lolicon API 的批次拆分，大于 20 张的请求会正确处理完整批次和余数。
+    - 即时请求 (fire=True) 在收到首张候选时立即返回，不再等待 provider 迭代结束；返回门禁后、任务截止前到达的首张候选会缓存供后续调用使用，无结果的任务到期后会被取消。
+    - 插件关闭时会取消并等待常规预载和即时获取任务结束。
+    - 修正未知 provider、provider 异常和空结果的日志等级与回退路径。
+- 修复消息收发计数在未初始化或非白名单适配器下可能抛出异常的问题；未获取到计数时显示为未知。
+- 修复 OneBot V11 返回的消息收发数为 `0` 时被错误视为缺失的问题。
+- 修正 `.env.example` 中网络接口过滤规则的 JSON 格式。
+- 为采集间隔和采集缓存大小增加合法性校验，避免无效配置导致运行时出图失败。
 
 ### 2.2.2
 

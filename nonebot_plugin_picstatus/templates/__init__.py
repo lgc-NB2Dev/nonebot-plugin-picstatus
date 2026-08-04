@@ -49,6 +49,7 @@ def pic_template(
             collectors=collecting,
         )
         logger.debug(f"Registered template {template_name}")
+        return func
 
     return deco
 

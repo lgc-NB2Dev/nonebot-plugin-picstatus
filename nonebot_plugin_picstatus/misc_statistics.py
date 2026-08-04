@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any
+from typing import Any, TypeVar
 
 from cookit.loguru import log_exception_warning
 from nonebot import get_driver, logger
@@ -14,10 +14,12 @@ from nonebot_plugin_uninfo import User, get_interface
 from .config import config
 from .util import is_3rd_qq_bot, make_http_client
 
+_K = TypeVar("_K")
+
 nonebot_run_time: datetime = datetime.now().astimezone()
 bot_connect_time: dict[str, datetime] = {}
-recv_num: dict[str, int] = {}
-send_num: dict[str, int] = {}
+recv_num: dict[str, int | None] = {}
+send_num: dict[str, int | None] = {}
 
 bot_info_cache: dict[str, User] = {}
 bot_avatar_cache: dict[str, bytes | None] = {}
@@ -57,12 +59,20 @@ def method_is_send_msg(platform: str, name: str) -> bool:
     )
 
 
+def dict_count_add(it: dict[_K, int | None], k: _K, v: int = 1) -> None:
+    o = it[k]
+    if o is None:
+        o = 0
+    it[k] = o + v
+
+
 if config.ps_count_message_sent_event:
 
     @event_preprocessor
     async def _(bot: BaseBot, event: BaseEvent):
         if (
-            config.ps_count_message_sent_event
+            bot.self_id in send_num
+            and config.ps_count_message_sent_event
             and (
                 (config.ps_count_message_sent_event is True)
                 or bot.adapter.get_name() in config.ps_count_message_sent_event
@@ -75,7 +85,7 @@ if config.ps_count_message_sent_event:
             )
         ):
             # logger.debug(f"Bot {bot.self_id} sent counter +1")
-            send_num[bot.self_id] += 1
+            dict_count_add(send_num, bot.self_id)
 
 
 if config.ps_count_message_sent_event is not True:
@@ -89,7 +99,8 @@ if config.ps_count_message_sent_event is not True:
         __: Any,
     ):
         if (
-            (not exc)
+            bot.self_id in send_num
+            and (not exc)
             and (config.ps_count_message_sent_event is not True)
             and (
                 (config.ps_count_message_sent_event is False)
@@ -98,7 +109,7 @@ if config.ps_count_message_sent_event is not True:
             and method_is_send_msg(bot.adapter.get_name(), api)
         ):
             # logger.debug(f"Bot {bot.self_id} sent counter +1")
-            send_num[bot.self_id] += 1
+            dict_count_add(send_num, bot.self_id)
 
 
 async def cache_bot_avatar(avatar: str, bot: BaseBot, event: BaseEvent, state: T_State):
@@ -148,11 +159,12 @@ async def cache_bot_info(bot: BaseBot):
 
 @driver.on_bot_connect
 async def _(bot: BaseBot):
+    # counters init on bot connect, do not count if bot id does not exist in these dicts
     bot_connect_time[bot.self_id] = datetime.now().astimezone()
     if bot.self_id not in recv_num:
-        recv_num[bot.self_id] = 0
-    if (bot.self_id not in send_num) and (bot.adapter.get_name() in SEND_APIS):
-        send_num[bot.self_id] = 0
+        recv_num[bot.self_id] = None
+    if bot.self_id not in send_num:
+        send_num[bot.self_id] = None
     await cache_bot_info(bot)
 
 
@@ -166,5 +178,5 @@ async def _(bot: BaseBot):
 
 @event_preprocessor
 async def _(bot: BaseBot, event: BaseEvent):
-    if event.get_type() == "message":
-        recv_num[bot.self_id] += 1
+    if event.get_type() == "message" and bot.self_id in recv_num:
+        dict_count_add(recv_num, bot.self_id)

@@ -338,6 +338,10 @@ span.label {
   align-items: center;
 }
 
+.list-grid :not(:nth-child(1)) {
+  justify-items: end;
+}
+
 .list-grid.disk-usage {
   grid-template-columns: auto minmax(180px, 100%) auto;
 }
