@@ -587,7 +587,7 @@ async def test_logs_provider_exceptions_as_warning_with_a_debug_stack(
     """A provider exception falls back for this request and records the failure reason."""
     from nonebot_plugin_picstatus import bg_provider as bg
 
-    logger = LogRecorder()
+    exceptions: list[tuple[BaseException, str]] = []
     monkeypatch.setattr(bg, "registered_bg_providers", {})
 
     @bg.bg_provider("broken")
@@ -596,14 +596,17 @@ async def test_logs_provider_exceptions_as_warning_with_a_debug_stack(
         if False:
             yield bg.create_none_bg()
 
-    monkeypatch.setattr(bg, "logger", logger)
+    monkeypatch.setattr(
+        bg,
+        "log_exception_warning",
+        lambda exception, message: exceptions.append((exception, message)),
+    )
     monkeypatch.setattr(bg.config, "ps_bg_provider", "broken")
     candidates = [candidate async for candidate in bg.fetch_bg(1)]
 
     assert len(candidates) == 1
-    assert len(logger.warning_messages) == 1
-    assert logger.debug_messages
-    assert not logger.exception_messages
+    assert len(exceptions) == 1
+    assert isinstance(exceptions[0][0], RuntimeError)
 
 
 @pytest.mark.asyncio

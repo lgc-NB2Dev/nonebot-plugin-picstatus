@@ -17,7 +17,7 @@ from typing import (
 )
 from typing_extensions import override
 
-from cookit.loguru import warning_suppress
+from cookit.loguru import log_exception_warning, warning_suppress
 from nonebot import get_driver, logger
 
 from .config import BG_PRELOAD_CACHE_DIR, DEFAULT_BG_PATH, config
@@ -88,10 +88,7 @@ def bg_provider(name: str | None = None, *, no_preload: bool = False):
         provider_name = name or func.__name__
         if provider_name in registered_bg_providers:
             raise ValueError(f"Duplicate bg provider name `{provider_name}`")
-        registered_bg_providers[provider_name] = RegisteredBGProvider(
-            func,
-            no_preload,
-        )
+        registered_bg_providers[provider_name] = RegisteredBGProvider(func, no_preload)
         return func
 
     return deco
@@ -251,11 +248,6 @@ def create_none_bg():
     return BgBytesData(None, DEFAULT_MIME)
 
 
-def log_provider_exception(message: str) -> None:
-    logger.warning(message)
-    logger.opt(exception=True).debug(message)
-
-
 async def fetch_bg(
     num: int,
     *,
@@ -274,10 +266,11 @@ async def fetch_bg(
     try:
         async for x in provider.factory(num):
             yield x
-    except Exception:
+    except Exception as e:
         if not fallback_on_error:
             raise
-        log_provider_exception(
+        log_exception_warning(
+            e,
             "Error when getting background, fallback to get one local bg",
         )
         async for x in local(1):
@@ -340,14 +333,14 @@ class BgPreloader:
     def record_routine_preload_result(
         self,
         got_candidate: bool,
-        failed: bool,
+        exception: Exception | None,
     ) -> None:
         if got_candidate:
             self.preload_failures = 0
             return
 
-        if failed:
-            log_provider_exception("Routine background preload failed")
+        if exception is not None:
+            log_exception_warning(exception, "Routine background preload failed")
         else:
             logger.warning("Routine background preload returned no candidates")
         self.preload_failures += 1
@@ -365,7 +358,7 @@ class BgPreloader:
     ):
         logger.debug(f"Preload task started, will preload {count} images, {fire=}")
         got_candidate = False
-        failed = False
+        exception: Exception | None = None
         try:
             async for x in fetch_bg(count, fallback_on_error=fire):
                 logger.debug("Got one image")
@@ -383,21 +376,21 @@ class BgPreloader:
                 ):
                     x = cache_bg(x) if isinstance(x, BgBytesData) else x
                 await self.background_queue.put(x)
-        except Exception:
-            failed = True
+        except Exception as e:
+            exception = e
         else:
             logger.debug("Preload task finished")
 
         if fire:
-            if failed:
-                log_provider_exception("Fire background retrieval failed")
+            if exception is not None:
+                log_exception_warning(exception, "Fire background retrieval failed")
             elif not got_candidate:
                 logger.warning("Fire background retrieval returned no candidates")
             if fire_result is not None and not fire_result.done():
                 fire_result.set_result(None)
             return
 
-        self.record_routine_preload_result(got_candidate, failed)
+        self.record_routine_preload_result(got_candidate, exception)
         if self.preload_suspended:
             self.current_load_task_main = None
         elif (
