@@ -38,7 +38,7 @@ path = "nonebot_plugin_picstatus/__init__.py"
 
 [tool.poe.tasks]
 test.cmd = "pytest"
-coverage.cmd = "pytest --cov=nonebot_plugin_picstatus --cov-report=term-missing"
+coverage.cmd = "pytest --cov=nonebot_plugin_picstatus --cov-branch --cov-report=term-missing"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
