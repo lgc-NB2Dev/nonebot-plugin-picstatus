@@ -7,7 +7,8 @@ First: This project expects the working root to be github repo `lgc-NB2Dev/works
 NOTE: The following command are expected to be run under the plugin repo root rather than the workspace root.
 
 ```bash
-uv run pytest
+poe test [...]      # pytest
+poe coverage [...]  # pytest --cov=nonebot_plugin_picstatus --cov-report=term-missing
 ```
 
 ## Structure
