@@ -82,7 +82,7 @@ nb plugin install nonebot-plugin-picstatus
 在 nonebot2 项目的插件目录下, 打开命令行, 根据你使用的包管理器, 输入相应的安装命令
 
 <details>
-<summary>[推荐] uv</summary>
+<summary>uv</summary>
 
 ```bash
 uv add nonebot-plugin-picstatus
