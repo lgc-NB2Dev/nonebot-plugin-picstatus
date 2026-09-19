@@ -4,7 +4,8 @@ import random
 import sys
 import time
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterable, Callable
+from collections.abc import AsyncIterable, AsyncIterator, Callable
+from contextlib import suppress
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -111,40 +112,60 @@ def resp_to_bg_data(resp: "Response"):
 
 
 class CoIterator(ABC, Generic[T]):
-    def __init__(self):
-        self.queue = aio.Queue[T | None]()
+    """Base class for providers that collect candidates concurrently.
+
+    Every iteration owns its queue and its producer task, so concurrent
+    iterations of one instance stay independent. `None` ends an iteration,
+    therefore a candidate must never be `None`.
+    """
 
     @abstractmethod
-    async def run_tasks(self): ...
+    async def run_tasks(self, queue: aio.Queue[T | None]) -> None:
+        """Deliver candidates into `queue`, possibly fewer than requested."""
 
-    async def run(self):
-        await self.run_tasks()
-        await self.queue.put(None)
+    async def _run(self, queue: aio.Queue[T | None]) -> None:
+        try:
+            await self.run_tasks(queue)
+        finally:
+            queue.put_nowait(None)
 
-    async def __aiter__(self):
-        async with TaskGroup() as t:
-            t.create_task(self.run())
-            while (x := await self.queue.get()) is not None:
+    async def __aiter__(self) -> AsyncIterator[T]:
+        queue: aio.Queue[T | None] = aio.Queue()
+        producer = aio.create_task(self._run(queue))
+        drained = False
+        try:
+            while (x := await queue.get()) is not None:
                 yield x
+            drained = True
+        finally:
+            if drained:
+                # The stream ended on its own, so a producer failure belongs
+                # to the consumer.
+                await producer
+            else:
+                # The consumer left early: stop the producer and drop its
+                # outcome instead of reporting an unretrieved exception.
+                producer.cancel()
+                with suppress(aio.CancelledError, Exception):
+                    await producer
 
 
 class BaseUrlBGProvider(CoIterator[BgData]):
     def __init__(self, num: int, url: str, concurrency: int = 4):
-        super().__init__()
         self.num = num
         self.url = url
         self.sem = aio.Semaphore(concurrency)
 
-    async def task_piece(self, cli: "AsyncClient"):
+    async def task_piece(self, cli: "AsyncClient", queue: aio.Queue[BgData | None]):
         async with self.sem:
             with warning_suppress("Failed to fetch image"):
                 x = resp_to_bg_data((await cli.get(self.url)).raise_for_status())
-                await self.queue.put(x)
+                await queue.put(x)
 
     @override
-    async def run_tasks(self):
+    async def run_tasks(self, queue: aio.Queue[BgData | None]):
         async with make_http_client() as cli:
-            await aio.gather(*(self.task_piece(cli) for _ in range(self.num)))
+            await aio.gather(*(self.task_piece(cli, queue) for _ in range(self.num)))
 
 
 @bg_provider("loli")
@@ -168,12 +189,15 @@ class LoliconResp(TypedDict):
 @bg_provider("lolicon")
 class LoliconBGProvider(CoIterator[BgData]):
     def __init__(self, num: int):
-        super().__init__()
         self.num = num
         self.sem = aio.Semaphore(4)
-        self.url_queue = aio.Queue[str | None]()
 
-    async def do_fetch_urls_piece(self, num: int, cli: "AsyncClient"):
+    async def do_fetch_urls_piece(
+        self,
+        num: int,
+        cli: "AsyncClient",
+        url_queue: aio.Queue[str | None],
+    ):
         with warning_suppress("Failed to fetch urls"):
             resp = await cli.get(
                 "https://api.lolicon.app/setu/v2",
@@ -186,22 +210,28 @@ class LoliconBGProvider(CoIterator[BgData]):
             )
             data: LoliconResp = resp.raise_for_status().json()
             for x in data["data"]:
-                await self.url_queue.put(x["urls"]["original"])
+                await url_queue.put(x["urls"]["original"])
 
-    async def fetch_urls_task_f(self):
+    async def fetch_urls_task_f(self, url_queue: aio.Queue[str | None]):
         async with make_http_client() as cli:
             for x in iter_batch_sizes(self.num, 20):
-                await self.do_fetch_urls_piece(x, cli)
-        await self.url_queue.put(None)
+                await self.do_fetch_urls_piece(x, cli, url_queue)
+        await url_queue.put(None)
 
-    async def fetch_image(self, url: str, cli: "AsyncClient"):
+    async def fetch_image(
+        self,
+        url: str,
+        cli: "AsyncClient",
+        queue: aio.Queue[BgData | None],
+    ):
         async with self.sem:
             with warning_suppress("Failed to fetch image"):
                 bg = resp_to_bg_data((await cli.get(url)).raise_for_status())
-                await self.queue.put(bg)
+                await queue.put(bg)
 
     @override
-    async def run_tasks(self):
+    async def run_tasks(self, queue: aio.Queue[BgData | None]):
+        url_queue: aio.Queue[str | None] = aio.Queue()
         pixiv_client = make_http_client(
             headers={
                 "User-Agent": (
@@ -214,9 +244,9 @@ class LoliconBGProvider(CoIterator[BgData]):
             },
         )
         async with TaskGroup() as t, pixiv_client:
-            t.create_task(self.fetch_urls_task_f())
-            while (x := await self.url_queue.get()) is not None:
-                t.create_task(self.fetch_image(x, pixiv_client))
+            t.create_task(self.fetch_urls_task_f(url_queue))
+            while (x := await url_queue.get()) is not None:
+                t.create_task(self.fetch_image(x, pixiv_client, queue))
 
 
 @bg_provider(no_preload=True)

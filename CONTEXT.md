@@ -8,6 +8,15 @@ cached availability with direct retrieval latency.
 **Background provider**:
 A source of background-image candidates.
 
+**Candidate**:
+One background-image item produced by a provider. An intentionally empty
+background is still a candidate.
+
+**Co-iterating provider**:
+A provider that produces candidates concurrently and streams them as they
+arrive. Iterations are independent: each one receives a complete stream of its
+own.
+
 **No-preload provider**:
 A provider explicitly selected to skip routine preloading.
 _Avoid_: A fallback provider that happens to supply a candidate.
