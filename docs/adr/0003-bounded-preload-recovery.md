@@ -1,3 +1,7 @@
+---
+status: accepted
+---
+
 # Bounded Preload Recovery
 
 Routine preloading has a configurable default retry budget of three empty or

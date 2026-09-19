@@ -1,3 +1,7 @@
+---
+status: accepted
+---
+
 # Provider-Defined Preload Eligibility
 
 Providers declare `no_preload=True` when they should not receive routine
