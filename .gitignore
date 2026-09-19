@@ -7,6 +7,10 @@
 .pdm-python
 build/
 __pycache__
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
 /nonebot_plugin_picstatus/res/picstatus-debug.html
 /.env
 /.env.*
