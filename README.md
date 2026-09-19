@@ -183,6 +183,12 @@ Telegram：[@lgc2333](https://t.me/lgc2333)
 
 ## 📝 更新日志
 
+### 2.3.1
+
+- 修复 `PS_BG_PROVIDER=local` 且本地背景文件数少于 `PS_BG_PRELOAD_COUNT` 时预载反复失败并最终停摆的问题（[#62](https://github.com/lgc-NB2Dev/nonebot-plugin-picstatus/issues/62)）：
+  - 请求数量超过现有文件数时返回全部现有文件，而不是抛出异常。
+  - `local` 来源不再参与例行预载，避免重复读取本地文件。
+
 ### 2.3.0
 
 - 将 nonebot-plugin-picstatus-ng 的更改合并至主线，感谢 [@wyf9](https://github.com/wyf9)：

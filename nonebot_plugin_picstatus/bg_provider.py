@@ -219,9 +219,10 @@ class LoliconBGProvider(CoIterator[BgData]):
                 t.create_task(self.fetch_image(x, pixiv_client))
 
 
-@bg_provider()
+@bg_provider(no_preload=True)
 async def local(num: int):
-    files = random.sample(BG_FILES, num)
+    # we allow providers to return less image than we require
+    files = random.sample(BG_FILES, min(num, len(BG_FILES)))
     # logger.debug(f"Chosen background `{files}`")
     for x in files:
         yield BgFileData(
