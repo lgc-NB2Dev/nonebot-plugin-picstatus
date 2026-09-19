@@ -1,5 +1,6 @@
 ---
-status: superseded by ADR-0004
+status: superseded
+superseded_by: ['0004']
 ---
 
 # Fire Retrievals Retain Late Results

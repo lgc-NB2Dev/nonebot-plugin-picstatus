@@ -1,6 +1,6 @@
 ---
 status: accepted
-supersedes: ADR-0002
+supersedes: ['0002']
 ---
 
 # Bound Fire Retrieval Lifetime
